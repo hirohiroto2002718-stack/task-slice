@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Slice</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #111827;
+      --accent-soft: #eef2ff;
+      --danger: #b91c1c;
+      --wait: #92400e;
+      --done: #6b7280;
+      --radius: 16px;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+    }
+
+    button.secondary {
+      background: #f3f4f6;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    button.ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    button.danger {
+      background: #fee2e2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    button.small {
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(246, 247, 249, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .top {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 14px 10px;
+    }
+
+    .brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -0.04em;
+    }
+
+    .brand small {
+      color: var(--muted);
+      display: block;
+      font-weight: 500;
+      letter-spacing: 0;
+      margin-top: -2px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .tab {
+      padding: 10px 8px;
+      border-radius: 999px;
+      background: white;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px;
+      padding-bottom: 80px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 860px) {
+      .grid.two {
+        grid-template-columns: 360px 1fr;
+        align-items: start;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .card h2, .card h3 {
+      margin: 0 0 10px;
+      line-height: 1.25;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 4px 0 12px;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      margin: 10px 0 5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--text);
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #9ca3af;
+      box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.08);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .row.three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .project-bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .project-add {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .tree {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .task.done {
+      opacity: 0.68;
+      background: #f9fafb;
+    }
+
+    .task-main {
+      padding: 12px;
+    }
+
+    .task-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .task-title strong {
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 8px 0 0;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    .badge.wait {
+      background: #fef3c7;
+      color: var(--wait);
+    }
+
+    .badge.done {
+      background: #e5e7eb;
+      color: var(--done);
+    }
+
+    .badge.warn {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 7px;
+    }
+
+    .done-condition {
+      margin-top: 8px;
+      padding: 9px 10px;
+      background: #f9fafb;
+      border-radius: 10px;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .children {
+      margin-left: 16px;
+      padding: 0 0 10px 10px;
+      border-left: 2px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty {
+      border: 1px dashed #cbd5e1;
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .slice-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slice-item {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .slice-item .path {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 0;
+    }
+
+    .pill-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      background: white;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .pill-check input {
+      width: auto;
+      box-shadow: none;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: #111827;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      bottom: 28px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .stat {
+      background: #f9fafb;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .stat b {
+      display: block;
+      font-size: 20px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="top">
+      <div class="brand">
+        <div>
+          <h1>Task Slice</h1>
+          <small>大きいタスクを、隙間時間でできる作業へ。</small>
+        </div>
+        <button id="quickAddBtn" class="small">＋追加</button>
+      </div>
+      <nav class="tabs" aria-label="画面切り替え">
+        <button class="tab active" data-view="breakdown">分解</button>
+        <button class="tab" data-view="now">今できる</button>
+        <button class="tab" data-view="waiting">確認待ち</button>
+        <button class="tab" data-view="settings">設定</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="project-bar">
+        <div>
+          <label for="projectSelect">プロジェクト</label>
+          <select id="projectSelect"></select>
+        </div>
+        <button id="deleteProjectBtn" class="danger small">削除</button>
+      </div>
+      <div class="project-add" style="margin-top:10px;">
+        <input id="newProjectName" placeholder="例：BOOMS当日運営、研究、アルプス子ども会" />
+        <button id="addProjectBtn" class="secondary">作成</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="statTotal">0</b><span>未完了</span></div>
+        <div class="stat"><b id="statTiny">0</b><span>15分以内</span></div>
+        <div class="stat"><b id="statWaiting">0</b><span>確認待ち</span></div>
+      </div>
+    </section>
+
+    <section id="view-breakdown" class="view">
+      <div class="grid two">
+        <section class="card" id="taskFormCard">
+          <h2 id="formTitle">タスクを追加</h2>
+          <p class="hint">まず大きいタスクを入れて、その下に「5〜20分でできる作業」をぶら下げます。</p>
+
+          <input type="hidden" id="editingTaskId" />
+
+          <label for="taskTitle">タスク名</label>
+          <input id="taskTitle" placeholder="例：QR決済の流れを書く" />
+
+          <label for="parentTask">親タスク</label>
+          <select id="parentTask"></select>
+
+          <div class="row">
+            <div>
+              <label for="taskMinutes">所要時間</label>
+              <select id="taskMinutes">
+                <option value="5">5分</option>
+                <option value="10" selected>10分</option>
+                <option value="15">15分</option>
+                <option value="20">20分</option>
+                <option value="30">30分</option>
+                <option value="45">45分</option>
+                <option value="60">60分以上</option>
+              </select>
+            </div>
+            <div>
+              <label for="taskDevice">使う環境</label>
+              <select id="taskDevice">
+                <option value="smartphone">スマホ</option>
+                <option value="pc">PC</option>
+                <option value="either" selected>どちらでも</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="taskEnergy">重さ</label>
+              <select id="taskEnergy">
+                <option value="light">軽い</option>
+                <option value="normal" selected>普通</option>
+                <option value="heavy">重い</option>
+              </select>
+            </div>
+            <div>
+              <label for="taskKind">種類</label>
+              <select id="taskKind">
+                <option value="write">書く</option>
+                <option value="check">確認する</option>
+                <option value="contact">連絡する</option>
+                <option value="organize">整理する</option>
+                <option value="think">考える</option>
+                <option value="create">作る</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="taskStatus">状態</label>
+          <select id="taskStatus">
+            <option value="todo" selected>未着手</option>
+            <option value="doing">作業中</option>
+            <option value="waiting">確認待ち</option>
+            <option value="done">完了</option>
+          </select>
+
+          <label for="taskDoneCondition">完了条件</label>
+          <textarea id="taskDoneCondition" placeholder="例：スタッフが見て3ステップで動ける状態にする"></textarea>
+
+          <label for="taskNotes">メモ</label>
+          <textarea id="taskNotes" placeholder="必要資料、注意点、聞く相手など"></textarea>
+
+          <div class="actions">
+            <button id="saveTaskBtn">保存</button>
+            <button id="clearFormBtn" class="secondary">クリア</button>
+          </div>
+
+          <p class="footer-note">
+            分解の目安：15分以内・完了条件あり・スマホ/PCの区別あり。大きいものは親タスクとして置く。
+          </p>
+        </section>
+
+        <section class="card">
+          <h2>分解ツリー</h2>
+          <p class="hint">親タスクの下に、実際に手を動かせる小さい作業を追加します。</p>
+          <div id="taskTree" class="tree"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="view-now" class="view hidden">
+      <section class="card">
+        <h2>今できる作業</h2>
+        <p class="hint">空き時間と環境に合う、小さい作業だけを出します。</p>
+
+        <div class="row three">
+          <div>
+            <label for="filterMinutes">空き時間</label>
+            <select id="filterMinutes">
+              <option value="5">5分</option>
+              <option value="10" selected>10分</option>
+              <option value="15">15分</option>
+              <option value="20">20分</option>
+              <option value="30">30分</option>
+              <option value="60">60分</option>
+            </select>
+          </div>
+          <div>
+            <label for="filterDevice">環境</label>
+            <select id="filterDevice">
+              <option value="smartphone" selected>スマホ</option>
+              <option value="pc">PC</option>
+              <option value="either">どちらでも</option>
+            </select>
+          </div>
+          <div>
+            <label for="filterEnergy">重さ</label>
+            <select id="filterEnergy">
+              <option value="all" selected>全部</option>
+              <option value="light">軽い</option>
+              <option value="normal">普通まで</option>
+              <option value="heavy">重いも含む</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <label class="pill-check"><input type="checkbox" id="leafOnly" checked /> 子タスクなしだけ</label>
+          <label class="pill-check"><input type="checkbox" id="hideWaiting" checked /> 確認待ちは隠す</label>
+        </div>
+      </section>
+
+      <div id="nowList" class="slice-list" style="margin-top:14px;"></div>
+    </section>
+
+    <section id="view-waiting" class="view hidden">
+      <section class="card">
+        <h2>確認待ち</h2>
+        <p class="hint">人に聞く、資料が必要、PCが必要など、今すぐ進められないものを分けて置きます。</p>
+      </section>
+      <div id="waitingList" class="slice-list" style="margin-top:14px;"></div>
+    </section>
+
+    <section id="view-settings" class="view hidden">
+      <div class="grid two">
+        <section class="card">
+          <h2>データを書き出す</h2>
+          <p class="hint">別端末へ移すときやバックアップ用に使います。</p>
+          <div class="actions">
+            <button id="exportBtn">JSONを書き出す</button>
+            <button id="copyExportBtn" class="secondary">コピー</button>
+          </div>
+          <label for="exportBox">書き出しデータ</label>
+          <textarea id="exportBox" style="min-height:220px;" readonly></textarea>
+        </section>
+
+        <section class="card">
+          <h2>データを読み込む</h2>
+          <p class="hint">書き出したJSONを貼り付けて復元できます。現在のデータは置き換わります。</p>
+          <label for="importBox">読み込みデータ</label>
+          <textarea id="importBox" style="min-height:220px;"></textarea>
+          <div class="actions">
+            <button id="importBtn">読み込む</button>
+            <button id="resetBtn" class="danger">全削除</button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast">保存しました</div>
+
+  <script>
+    const STORAGE_KEY = "task-slice-v1";
+
+    const labels = {
+      device: {
+        smartphone: "スマホ",
+        pc: "PC",
+        either: "どちらでも"
+      },
+      energy: {
+        light: "軽い",
+        normal: "普通",
+        heavy: "重い"
+      },
+      kind: {
+        write: "書く",
+        check: "確認",
+        contact: "連絡",
+        organize: "整理",
+        think: "考える",
+        create: "作る"
+      },
+      status: {
+        todo: "未着手",
+        doing: "作業中",
+        waiting: "確認待ち",
+        done: "完了"
+      }
+    };
+
+    let state = loadState();
+
+    const $ = (id) => document.getElementById(id);
+
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.projects && parsed.tasks) return parsed;
+        } catch (e) {}
+      }
+
+      const firstProjectId = uid();
+      return {
+        currentProjectId: firstProjectId,
+        projects: [
+          { id: firstProjectId, name: "サンプル：BOOMS当日準備", createdAt: new Date().toISOString() }
+        ],
+        tasks: [
+          {
+            id: uid(),
+            projectId: firstProjectId,
+            parentId: null,
+            title: "受付マニュアルを作る",
+            minutes: 30,
+            device: "either",
+            energy: "normal",
+            kind: "create",
+            status: "todo",
+            doneCondition: "当日ボランティアが見て受付対応できる状態にする",
+            notes: "この下に小さい作業を追加する",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ]
+      };
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function currentProject() {
+      return state.projects.find(p => p.id === state.currentProjectId) || state.projects[0];
+    }
+
+    function currentTasks() {
+      const p = currentProject();
+      if (!p) return [];
+      return state.tasks.filter(t => t.projectId === p.id);
+    }
+
+    function childrenOf(parentId) {
+      return currentTasks().filter(t => t.parentId === parentId);
+    }
+
+    function taskById(id) {
+      return state.tasks.find(t => t.id === id);
+    }
+
+    function hasChildren(taskId) {
+      return state.tasks.some(t => t.parentId === taskId);
+    }
+
+    function escapeHtml(s) {
+      return String(s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function toast(message) {
+      const el = $("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 1500);
+    }
+
+    function renderAll() {
+      renderProjects();
+      renderParentOptions();
+      renderStats();
+      renderTree();
+      renderNow();
+      renderWaiting();
+    }
+
+    function renderProjects() {
+      const select = $("projectSelect");
+      select.innerHTML = "";
+      state.projects.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name;
+        if (p.id === state.currentProjectId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderParentOptions(selectedParentId = $("parentTask").value || "") {
+      const select = $("parentTask");
+      select.innerHTML = "";
+      const none = document.createElement("option");
+      none.value = "";
+      none.textContent = "親なし（大きいタスク）";
+      select.appendChild(none);
+
+      const tasks = currentTasks().filter(t => t.status !== "done");
+      const roots = tasks.filter(t => !t.parentId);
+
+      function addOptions(task, depth) {
+        const opt = document.createElement("option");
+        opt.value = task.id;
+        opt.textContent = `${"　".repeat(depth)}└ ${task.title}`;
+        select.appendChild(opt);
+        tasks.filter(t => t.parentId === task.id).forEach(child => addOptions(child, depth + 1));
+      }
+
+      roots.forEach(t => addOptions(t, 0));
+      select.value = selectedParentId || "";
+    }
+
+    function renderStats() {
+      const tasks = currentTasks();
+      const undone = tasks.filter(t => t.status !== "done");
+      $("statTotal").textContent = undone.length;
+      $("statTiny").textContent = undone.filter(t => Number(t.minutes) <= 15).length;
+      $("statWaiting").textContent = undone.filter(t => t.status === "waiting").length;
+    }
+
+    function taskPath(task) {
+      const names = [];
+      let current = task;
+      while (current) {
+        names.unshift(current.title);
+        current = current.parentId ? taskById(current.parentId) : null;
+      }
+      return names.join(" ＞ ");
+    }
+
+    function qualityBadges(task) {
+      const badges = [];
+      if (Number(task.minutes) > 20 && !hasChildren(task.id)) {
+        badges.push(`<span class="badge warn">まだ大きいかも</span>`);
+      }
+      if (!task.doneCondition || task.doneCondition.trim().length === 0) {
+        badges.push(`<span class="badge warn">完了条件なし</span>`);
+      }
+      return badges.join("");
+    }
+
+    function taskCard(task, depth = 0) {
+      const childTasks = childrenOf(task.id);
+      const doneClass = task.status === "done" ? "done" : "";
+      const statusBadgeClass = task.status === "waiting" ? "wait" : task.status === "done" ? "done" : "";
+
+      const el = document.createElement("div");
+      el.className = `task ${doneClass}`;
+      el.innerHTML = `
+        <div class="task-main">
+          <div class="task-title">
+            <strong>${escapeHtml(task.title)}</strong>
+            <span class="badge ${statusBadgeClass}">${labels.status[task.status]}</span>
+          </div>
+          <div class="badges">
+            <span class="badge">${task.minutes}分</span>
+            <span class="badge">${labels.device[task.device]}</span>
+            <span class="badge">${labels.energy[task.energy]}</span>
+            <span class="badge">${labels.kind[task.kind]}</span>
+            ${qualityBadges(task)}
+          </div>
+          ${task.doneCondition ? `<div class="done-condition"><b>完了条件：</b>${escapeHtml(task.doneCondition)}</div>` : ""}
+          ${task.notes ? `<div class="meta">${escapeHtml(task.notes)}</div>` : ""}
+          <div class="actions">
+            <button class="small secondary" data-action="child" data-id="${task.id}">子タスク追加</button>
+            <button class="small ghost" data-action="edit" data-id="${task.id}">編集</button>
+            <button class="small secondary" data-action="toggle" data-id="${task.id}">
+              ${task.status === "done" ? "未完了へ" : "完了"}
+            </button>
+            <button class="small ghost" data-action="waiting" data-id="${task.id}">確認待ち</button>
+            <button class="small danger" data-action="delete" data-id="${task.id}">削除</button>
+          </div>
+        </div>
+      `;
+
+      if (childTasks.length) {
+        const children = document.createElement("div");
+        children.className = "children";
+        childTasks.forEach(child => children.appendChild(taskCard(child, depth + 1)));
+        el.appendChild(children);
+      }
+
+      return el;
+    }
+
+    function renderTree() {
+      const tree = $("taskTree");
+      tree.innerHTML = "";
+      const roots = currentTasks().filter(t => !t.parentId);
+
+      if (!roots.length) {
+        tree.innerHTML = `<div class="empty">まだタスクがありません。まず大きいタスクを1つ追加してください。</div>`;
+        return;
+      }
+
+      roots.forEach(t => tree.appendChild(taskCard(t)));
+    }
+
+    function renderNow() {
+      const list = $("nowList");
+      list.innerHTML = "";
+
+      const maxMinutes = Number($("filterMinutes").value);
+      const device = $("filterDevice").value;
+      const energy = $("filterEnergy").value;
+      const leafOnly = $("leafOnly").checked;
+      const hideWaiting = $("hideWaiting").checked;
+
+      const energyRank = { light: 1, normal: 2, heavy: 3 };
+      const energyMax = energy === "light" ? 1 : energy === "normal" ? 2 : 3;
+
+      let tasks = currentTasks().filter(t => t.status !== "done");
+      tasks = tasks.filter(t => Number(t.minutes) <= maxMinutes);
+
+      if (device !== "either") {
+        tasks = tasks.filter(t => t.device === device || t.device === "either");
+      }
+
+      if (energy !== "all") {
+        tasks = tasks.filter(t => energyRank[t.energy] <= energyMax);
+      }
+
+      if (leafOnly) {
+        tasks = tasks.filter(t => !hasChildren(t.id));
+      }
+
+      if (hideWaiting) {
+        tasks = tasks.filter(t => t.status !== "waiting");
+      }
+
+      if (!tasks.length) {
+        list.innerHTML = `<div class="empty">この条件でできる作業はありません。空き時間を増やすか、タスクをもっと細かく分解してください。</div>`;
+        return;
+      }
+
+      tasks
+        .sort((a, b) => Number(a.minutes) - Number(b.minutes))
+        .forEach(t => list.appendChild(sliceItem(t)));
+    }
+
+    function renderWaiting() {
+      const list = $("waitingList");
+      list.innerHTML = "";
+
+      const tasks = currentTasks().filter(t => t.status === "waiting");
+
+      if (!tasks.length) {
+        list.innerHTML = `<div class="empty">確認待ちのタスクはありません。</div>`;
+        return;
+      }
+
+      tasks.forEach(t => list.appendChild(sliceItem(t)));
+    }
+
+    function sliceItem(task) {
+      const el = document.createElement("div");
+      el.className = "slice-item";
+      el.innerHTML = `
+        <div class="path">${escapeHtml(taskPath(task))}</div>
+        <strong>${escapeHtml(task.title)}</strong>
+        <div class="badges">
+          <span class="badge">${task.minutes}分</span>
+          <span class="badge">${labels.device[task.device]}</span>
+          <span class="badge">${labels.energy[task.energy]}</span>
+          <span class="badge">${labels.kind[task.kind]}</span>
+          <span class="badge ${task.status === "waiting" ? "wait" : ""}">${labels.status[task.status]}</span>
+        </div>
+        ${task.doneCondition ? `<div class="done-condition"><b>完了条件：</b>${escapeHtml(task.doneCondition)}</div>` : ""}
+        ${task.notes ? `<div class="meta">${escapeHtml(task.notes)}</div>` : ""}
+        <div class="actions">
+          <button class="small secondary" data-action="toggle" data-id="${task.id}">${task.status === "done" ? "未完了へ" : "完了"}</button>
+          <button class="small ghost" data-action="edit" data-id="${task.id}">編集</button>
+          <button class="small ghost" data-action="doing" data-id="${task.id}">作業中</button>
+        </div>
+      `;
+      return el;
+    }
+
+    function clearForm() {
+      $("editingTaskId").value = "";
+      $("formTitle").textContent = "タスクを追加";
+      $("taskTitle").value = "";
+      $("parentTask").value = "";
+      $("taskMinutes").value = "10";
+      $("taskDevice").value = "either";
+      $("taskEnergy").value = "normal";
+      $("taskKind").value = "write";
+      $("taskStatus").value = "todo";
+      $("taskDoneCondition").value = "";
+      $("taskNotes").value = "";
+    }
+
+    function saveTaskFromForm() {
+      const title = $("taskTitle").value.trim();
+      if (!title) {
+        toast("タスク名を入力してください");
+        return;
+      }
+
+      const id = $("editingTaskId").value;
+      const now = new Date().toISOString();
+
+      const data = {
+        projectId: currentProject().id,
+        parentId: $("parentTask").value || null,
+        title,
+        minutes: Number($("taskMinutes").value),
+        device: $("taskDevice").value,
+        energy: $("taskEnergy").value,
+        kind: $("taskKind").value,
+        status: $("taskStatus").value,
+        doneCondition: $("taskDoneCondition").value.trim(),
+        notes: $("taskNotes").value.trim(),
+        updatedAt: now
+      };
+
+      if (id) {
+        const task = taskById(id);
+        if (!task) return;
+        Object.assign(task, data);
+        toast("更新しました");
+      } else {
+        state.tasks.push({
+          id: uid(),
+          ...data,
+          createdAt: now
+        });
+        toast("追加しました");
+      }
+
+      saveState();
+      clearForm();
+      renderAll();
+    }
+
+    function editTask(id) {
+      const t = taskById(id);
+      if (!t) return;
+      $("editingTaskId").value = t.id;
+      $("formTitle").textContent = "タスクを編集";
+      $("taskTitle").value = t.title;
+      renderParentOptions(t.parentId || "");
+      $("parentTask").value = t.parentId || "";
+      $("taskMinutes").value = String(t.minutes);
+      $("taskDevice").value = t.device;
+      $("taskEnergy").value = t.energy;
+      $("taskKind").value = t.kind;
+      $("taskStatus").value = t.status;
+      $("taskDoneCondition").value = t.doneCondition || "";
+      $("taskNotes").value = t.notes || "";
+      showView("breakdown");
+      $("taskTitle").focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function addChild(parentId) {
+      clearForm();
+      renderParentOptions(parentId);
+      $("parentTask").value = parentId;
+      showView("breakdown");
+      $("taskTitle").focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function descendantIds(id) {
+      const result = [];
+      const stack = [id];
+      while (stack.length) {
+        const current = stack.pop();
+        result.push(current);
+        state.tasks.filter(t => t.parentId === current).forEach(t => stack.push(t.id));
+      }
+      return result;
+    }
+
+    function deleteTask(id) {
+      const t = taskById(id);
+      if (!t) return;
+      if (!confirm(`「${t.title}」と子タスクを削除しますか？`)) return;
+      const ids = new Set(descendantIds(id));
+      state.tasks = state.tasks.filter(t => !ids.has(t.id));
+      saveState();
+      renderAll();
+      toast("削除しました");
+    }
+
+    function setStatus(id, status) {
+      const t = taskById(id);
+      if (!t) return;
+      t.status = status;
+      t.updatedAt = new Date().toISOString();
+      saveState();
+      renderAll();
+    }
+
+    function toggleDone(id) {
+      const t = taskById(id);
+      if (!t) return;
+      setStatus(id, t.status === "done" ? "todo" : "done");
+    }
+
+    function showView(view) {
+      document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+      $("view-" + view).classList.remove("hidden");
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.view === view));
+      if (view === "now") renderNow();
+      if (view === "waiting") renderWaiting();
+    }
+
+    document.addEventListener("click", (e) => {
+      const action = e.target?.dataset?.action;
+      const id = e.target?.dataset?.id;
+      if (!action || !id) return;
+
+      if (action === "child") addChild(id);
+      if (action === "edit") editTask(id);
+      if (action === "toggle") toggleDone(id);
+      if (action === "waiting") setStatus(id, "waiting");
+      if (action === "delete") deleteTask(id);
+      if (action === "doing") setStatus(id, "doing");
+    });
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => showView(tab.dataset.view));
+    });
+
+    $("quickAddBtn").addEventListener("click", () => {
+      showView("breakdown");
+      clearForm();
+      $("taskTitle").focus();
+    });
+
+    $("projectSelect").addEventListener("change", (e) => {
+      state.currentProjectId = e.target.value;
+      saveState();
+      clearForm();
+      renderAll();
+    });
+
+    $("addProjectBtn").addEventListener("click", () => {
+      const name = $("newProjectName").value.trim();
+      if (!name) {
+        toast("プロジェクト名を入力してください");
+        return;
+      }
+      const id = uid();
+      state.projects.push({ id, name, createdAt: new Date().toISOString() });
+      state.currentProjectId = id;
+      $("newProjectName").value = "";
+      saveState();
+      clearForm();
+      renderAll();
+      toast("プロジェクトを作成しました");
+    });
+
+    $("deleteProjectBtn").addEventListener("click", () => {
+      const p = currentProject();
+      if (!p) return;
+      if (state.projects.length === 1) {
+        toast("最後のプロジェクトは削除できません");
+        return;
+      }
+      if (!confirm(`プロジェクト「${p.name}」と中のタスクを削除しますか？`)) return;
+
+      state.projects = state.projects.filter(project => project.id !== p.id);
+      state.tasks = state.tasks.filter(task => task.projectId !== p.id);
+      state.currentProjectId = state.projects[0].id;
+      saveState();
+      clearForm();
+      renderAll();
+      toast("プロジェクトを削除しました");
+    });
+
+    $("saveTaskBtn").addEventListener("click", saveTaskFromForm);
+    $("clearFormBtn").addEventListener("click", clearForm);
+
+    ["filterMinutes", "filterDevice", "filterEnergy", "leafOnly", "hideWaiting"].forEach(id => {
+      $(id).addEventListener("change", renderNow);
+    });
+
+    $("exportBtn").addEventListener("click", () => {
+      $("exportBox").value = JSON.stringify(state, null, 2);
+      toast("書き出しました");
+    });
+
+    $("copyExportBtn").addEventListener("click", async () => {
+      if (!$("exportBox").value) $("exportBox").value = JSON.stringify(state, null, 2);
+      try {
+        await navigator.clipboard.writeText($("exportBox").value);
+        toast("コピーしました");
+      } catch (e) {
+        toast("コピーできませんでした");
+      }
+    });
+
+    $("importBtn").addEventListener("click", () => {
+      const raw = $("importBox").value.trim();
+      if (!raw) {
+        toast("JSONを貼り付けてください");
+        return;
+      }
+      try {
+        const data = JSON.parse(raw);
+        if (!data.projects || !data.tasks) throw new Error("invalid");
+        state = data;
+        saveState();
+        clearForm();
+        renderAll();
+        showView("breakdown");
+        toast("読み込みました");
+      } catch (e) {
+        toast("読み込めないJSONです");
+      }
+    });
+
+    $("resetBtn").addEventListener("click", () => {
+      if (!confirm("Task Sliceの全データを削除しますか？")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = loadState();
+      clearForm();
+      renderAll();
+      showView("breakdown");
+      toast("初期化しました");
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>

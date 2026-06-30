@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Slice</title>
+  <style>
+    :root {
+      --bg: #fbf7f2;
+      --paper: rgba(255, 255, 255, .86);
+      --card: #ffffff;
+      --text: #2b211d;
+      --muted: #8b7468;
+      --line: #ecd8cc;
+      --cream: #fff3ea;
+      --cream2: #fffaf6;
+      --accent: #ff8a65;
+      --accent2: #ffb085;
+      --accent-dark: #d95f43;
+      --brown: #6f4e37;
+      --blue: #3b82f6;
+      --blue-soft: #dbeafe;
+      --purple: #8b5cf6;
+      --purple-soft: #ede9fe;
+      --green: #22c55e;
+      --green-soft: #dcfce7;
+      --gray: #94a3b8;
+      --gray-soft: #f1f5f9;
+      --yellow: #b7791f;
+      --yellow-soft: #fef3c7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --shadow: 0 14px 38px rgba(111, 78, 55, .10);
+      --shadow2: 0 6px 16px rgba(111, 78, 55, .08);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(255, 176, 133, .34) 0, transparent 33%),
+        radial-gradient(circle at 98% 6%, rgba(255, 228, 181, .55) 0, transparent 28%),
+        linear-gradient(180deg, #fffaf4 0%, #fbf7f2 52%, #fff7ef 100%);
+    }
+
+    button, input, textarea, select { font: inherit; }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      font-weight: 850;
+      cursor: pointer;
+      line-height: 1;
+      box-shadow: 0 8px 18px rgba(255, 138, 101, .22);
+    }
+
+    button:hover { filter: brightness(.98); }
+
+    button.secondary {
+      background: #fff;
+      color: var(--brown);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow2);
+    }
+
+    button.light {
+      background: var(--cream);
+      color: var(--brown);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid #fecaca;
+      box-shadow: none;
+    }
+
+    button.small { padding: 7px 10px; font-size: 12px; }
+    button.tiny { padding: 5px 8px; font-size: 11px; }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, .92);
+      color: var(--text);
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(255, 138, 101, .14);
+    }
+
+    textarea {
+      min-height: 62px;
+      resize: vertical;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(251, 247, 242, .74);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(236, 216, 204, .72);
+    }
+
+    .top {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 11px 12px 9px;
+    }
+
+    .brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 25px;
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      background: rgba(255,255,255,.52);
+      padding: 5px;
+      border: 1px solid rgba(236,216,204,.7);
+      border-radius: 999px;
+    }
+
+    .tab {
+      background: transparent;
+      color: var(--muted);
+      border: 0;
+      padding: 9px 6px;
+      font-size: 14px;
+      box-shadow: none;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: var(--brown);
+      box-shadow: var(--shadow2);
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 10px 12px 86px;
+    }
+
+    .hidden { display: none !important; }
+
+    .panel, .project-mini, .task-card, .now-head {
+      background: var(--paper);
+      border: 1px solid rgba(236, 216, 204, .78);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .panel {
+      padding: 11px 12px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .section-line {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .section-line h2 { flex: 0 0 auto; }
+    .section-line .hint { flex: 1 1 260px; }
+
+    .project-mini {
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .project-mini-main {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+    }
+
+    .project-name {
+      font-size: 16px;
+      font-weight: 950;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mini-line {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border: 1px solid var(--line);
+      background: rgba(255, 250, 246, .94);
+      color: var(--brown);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .project-settings {
+      border-top: 1px solid var(--line);
+      padding: 10px 12px;
+      background: rgba(255,255,255,.66);
+    }
+
+    .project-row, .cloud-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .add-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .list-head {
+      padding: 10px 12px;
+      margin-bottom: 9px;
+    }
+
+    .list-title-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .condition-line {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .condition-chip {
+      border: 1px solid var(--line);
+      background: rgba(255,250,246,.95);
+      color: var(--brown);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .filter-panel {
+      border-top: 1px solid var(--line);
+      margin-top: 9px;
+      padding-top: 9px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-card {
+      background: rgba(255,255,255,.92);
+      overflow: hidden;
+      border-left-width: 6px;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 34px rgba(111, 78, 55, .13);
+    }
+
+    .dev-smartphone { border-left-color: var(--blue); }
+    .dev-pc { border-left-color: var(--purple); }
+    .dev-physical { border-left-color: var(--green); }
+    .dev-either { border-left-color: #cbd5e1; }
+
+    .task-card.done, .child-row.done { opacity: .58; }
+
+    .task-main { padding: 9px 10px; }
+
+    .task-top {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .check {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 2px solid #ecd7c7;
+      background: #fff;
+      color: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .check.done {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .title {
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.28;
+      word-break: break-word;
+    }
+
+    .parent-title { font-size: 16px; }
+
+    .path {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .badges {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 10.5px;
+      font-weight: 900;
+      background: var(--gray-soft);
+      color: #475569;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    .badge.smartphone { background: var(--blue-soft); color: var(--blue); }
+    .badge.pc { background: var(--purple-soft); color: var(--purple); }
+    .badge.physical { background: var(--green-soft); color: var(--green); }
+    .badge.either { background: var(--gray-soft); color: #64748b; }
+    .badge.waiting { background: var(--yellow-soft); color: var(--yellow); }
+    .badge.warn { background: var(--red-soft); color: var(--red); }
+    .badge.summary { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+
+    .details {
+      border-top: 1px solid var(--line);
+      padding: 8px 10px 10px;
+      background: rgba(255,253,251,.82);
+    }
+
+    .details-box {
+      background: var(--cream2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 9px;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .details-box b { display: block; margin-bottom: 3px; }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .children {
+      border-top: 1px solid var(--line);
+      background: rgba(255,249,245,.78);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .child-row {
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      border-left-width: 5px;
+      border-radius: 16px;
+      padding: 8px 9px;
+      box-shadow: none;
+    }
+
+    .child-row .task-top {
+      grid-template-columns: auto 1fr auto;
+      gap: 7px;
+    }
+
+    .child-row .check { width: 22px; height: 22px; }
+    .child-row .title { font-size: 13.5px; }
+
+    .move-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px;
+      align-items: end;
+      margin-top: 8px;
+    }
+
+    .empty {
+      background: rgba(255,255,255,.78);
+      border: 1px dashed #e5cdbd;
+      border-radius: 18px;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 850;
+    }
+
+    .add-panel { padding: 10px 12px; }
+
+    .add-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .add-title-row h2 {
+      font-size: 18px;
+      flex: 0 0 auto;
+    }
+
+    .add-title-row .hint { flex: 1 1 260px; }
+
+    .main-add-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .45fr;
+      gap: 8px;
+    }
+
+    .small-add-grid {
+      display: grid;
+      grid-template-columns: .7fr .7fr .7fr .7fr;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .advanced-panel {
+      border-top: 1px solid var(--line);
+      margin-top: 9px;
+      padding-top: 8px;
+    }
+
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .cloud-box, .storage-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      border-radius: 16px;
+      padding: 11px;
+      margin: 9px 0 10px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .storage-box {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #9a3412;
+    }
+
+    .cloud-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 9px;
+    }
+
+    .cloud-status {
+      color: #1e40af;
+      font-size: 13px;
+      font-weight: 850;
+      margin-top: 7px;
+    }
+
+    textarea.code {
+      min-height: 150px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      background: var(--brown);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+      transition: .18s;
+    }
+
+    .toast.show { opacity: 1; bottom: 34px; }
+
+    .fab {
+      position: fixed;
+      right: 16px;
+      bottom: 18px;
+      z-index: 60;
+      box-shadow: 0 12px 30px rgba(255, 138, 101, .34);
+      padding: 14px 17px;
+    }
+
+    @media (max-width: 760px) {
+      .main-add-grid { grid-template-columns: 1fr; }
+      .small-add-grid { grid-template-columns: 1fr 1fr; }
+      .filters { grid-template-columns: 1fr; }
+      .project-row, .cloud-row, .move-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 540px) {
+      .section-line { display: block; }
+      .section-line .hint { display: block; margin-top: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="top">
+      <div class="brand">
+        <div>
+          <h1>Task Slice 🍰</h1>
+          <p>大きいタスクを小さく切る</p>
+        </div>
+        <button id="topAddBtn" class="small">＋追加</button>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-view="list">一覧</button>
+        <button class="tab" data-view="add">追加</button>
+        <button class="tab" data-view="now">スキマ</button>
+        <button class="tab" data-view="backup">保存</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="project-mini">
+      <div class="project-mini-main">
+        <div>
+          <div id="miniProjectName" class="project-name">プロジェクト</div>
+          <div class="mini-line">
+            <span id="miniOpen" class="pill">未完了0</span>
+            <span id="miniSmall" class="pill">15分0</span>
+            <span id="miniDone" class="pill">完了0</span>
+          </div>
+        </div>
+        <button id="projectSettingsBtn" class="small light">設定</button>
+      </div>
+
+      <div id="projectSettings" class="project-settings hidden">
+        <div class="project-row">
+          <div>
+            <label for="projectSelect">プロジェクト</label>
+            <select id="projectSelect"></select>
+          </div>
+          <button id="deleteProjectBtn" class="danger small">削除</button>
+        </div>
+        <div class="add-row">
+          <input id="newProjectName" placeholder="新しいプロジェクト名" />
+          <button id="addProjectBtn" class="secondary">作成</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-list" class="view">
+      <section class="panel list-head">
+        <div class="list-title-row">
+          <div>
+            <div class="section-line">
+              <h2>一覧</h2>
+              <p class="hint">追加後のタスクも、詳細から好きな親タスクの下へ移動できます。</p>
+            </div>
+            <div id="listConditionLine" class="condition-line"></div>
+          </div>
+          <button id="listFilterBtn" class="small light">絞込</button>
+        </div>
+
+        <div id="listFilterPanel" class="filter-panel hidden">
+          <div class="filters">
+            <div>
+              <label for="listMode">表示</label>
+              <select id="listMode">
+                <option value="parents" selected>親タスク中心</option>
+                <option value="small">小さい作業だけ</option>
+                <option value="all">全部</option>
+              </select>
+            </div>
+            <div>
+              <label for="listStatus">状態</label>
+              <select id="listStatus">
+                <option value="open" selected>未完了のみ</option>
+                <option value="all">全部</option>
+                <option value="done">完了のみ</option>
+                <option value="waiting">確認待ち</option>
+              </select>
+            </div>
+            <div>
+              <label for="listDevice">環境</label>
+              <select id="listDevice">
+                <option value="all" selected>全部</option>
+                <option value="smartphone">スマホ</option>
+                <option value="pc">PC</option>
+                <option value="physical">物理行動</option>
+                <option value="either">どこでも</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="taskList" class="list"></div>
+    </section>
+
+    <section id="view-add" class="view hidden">
+      <section class="panel add-panel">
+        <div class="add-title-row">
+          <h2 id="formTitle">タスク追加</h2>
+          <p class="hint">基本は名前と時間だけ。親はあとから移動でもOK。</p>
+        </div>
+
+        <input type="hidden" id="editingTaskId" />
+
+        <div class="main-add-grid">
+          <div>
+            <label for="taskTitle">タスク名</label>
+            <input id="taskTitle" placeholder="例：現金支払いの流れを3行で書く" />
+          </div>
+          <div>
+            <label for="parentTask">親タスク</label>
+            <select id="parentTask"></select>
+          </div>
+          <div>
+            <label for="taskMinutes">時間</label>
+            <select id="taskMinutes">
+              <option value="5">5分</option>
+              <option value="10" selected>10分</option>
+              <option value="15">15分</option>
+              <option value="20">20分</option>
+              <option value="30">30分</option>
+              <option value="45">45分</option>
+              <option value="60">60分+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="small-add-grid">
+          <div>
+            <label for="taskDevice">環境</label>
+            <select id="taskDevice">
+              <option value="either" selected>どこでも</option>
+              <option value="smartphone">スマホ</option>
+              <option value="pc">PC</option>
+              <option value="physical">物理行動</option>
+            </select>
+          </div>
+          <div>
+            <label for="taskStatus">状態</label>
+            <select id="taskStatus">
+              <option value="todo" selected>未着手</option>
+              <option value="doing">作業中</option>
+              <option value="waiting">確認待ち</option>
+              <option value="done">完了</option>
+            </select>
+          </div>
+          <div>
+            <label for="taskEnergy">重さ</label>
+            <select id="taskEnergy">
+              <option value="normal" selected>普通</option>
+              <option value="light">軽い</option>
+              <option value="heavy">重い</option>
+            </select>
+          </div>
+          <div>
+            <label for="taskKind">種類</label>
+            <select id="taskKind">
+              <option value="write" selected>書く</option>
+              <option value="check">確認</option>
+              <option value="contact">連絡</option>
+              <option value="organize">整理</option>
+              <option value="think">考える</option>
+              <option value="create">作る</option>
+              <option value="move">移動・受取</option>
+              <option value="meet">対面・声かけ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="saveTaskBtn">保存</button>
+          <button id="clearFormBtn" class="light">クリア</button>
+          <button id="advancedToggleBtn" class="secondary" type="button">完了条件・メモ</button>
+        </div>
+
+        <div id="advancedPanel" class="advanced-panel hidden">
+          <div class="row2">
+            <div>
+              <label for="taskDoneCondition">完了条件</label>
+              <textarea id="taskDoneCondition" placeholder="例：3行で書けている"></textarea>
+            </div>
+            <div>
+              <label for="taskNotes">メモ</label>
+              <textarea id="taskNotes" placeholder="必要資料、聞く相手など"></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="view-now" class="view hidden">
+      <section class="panel list-head">
+        <div class="list-title-row">
+          <div>
+            <div class="section-line">
+              <h2>スキマ</h2>
+              <p class="hint">必要な時だけ使う、小タスクだけの表示です。</p>
+            </div>
+            <div id="nowConditionLine" class="condition-line"></div>
+          </div>
+          <button id="nowFilterBtn" class="small light">条件</button>
+        </div>
+
+        <div id="nowFilterPanel" class="filter-panel hidden">
+          <div class="filters">
+            <div>
+              <label for="filterMinutes">空き時間</label>
+              <select id="filterMinutes">
+                <option value="5">5分</option>
+                <option value="10" selected>10分</option>
+                <option value="15">15分</option>
+                <option value="20">20分</option>
+                <option value="30">30分</option>
+                <option value="60">60分</option>
+              </select>
+            </div>
+            <div>
+              <label for="filterDevice">環境</label>
+              <select id="filterDevice">
+                <option value="either" selected>全部</option>
+                <option value="smartphone">スマホ</option>
+                <option value="pc">PC</option>
+                <option value="physical">物理行動</option>
+              </select>
+            </div>
+            <div>
+              <label for="filterEnergy">重さ</label>
+              <select id="filterEnergy">
+                <option value="light">軽いだけ</option>
+                <option value="normal" selected>普通まで</option>
+                <option value="heavy">重いも含む</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div id="nowList" class="list"></div>
+    </section>
+
+    <section id="view-backup" class="view hidden">
+      <section class="panel">
+        <h2>アカウント同期</h2>
+        <div class="cloud-box">
+          メールアドレスでログインすると、PCとスマホで同じデータを手動同期できます。
+        </div>
+
+        <div id="cloudLoggedOut">
+          <div class="cloud-row">
+            <div>
+              <label for="syncEmail">メールアドレス</label>
+              <input id="syncEmail" type="email" placeholder="example@gmail.com" />
+            </div>
+            <button id="sendLoginLinkBtn">ログインリンク送信</button>
+          </div>
+          <div id="cloudLoggedOutStatus" class="cloud-status"></div>
+        </div>
+
+        <div id="cloudLoggedIn" class="hidden">
+          <div class="cloud-status">ログイン中：<span id="syncUserEmail"></span></div>
+          <div class="cloud-actions">
+            <button id="cloudSaveBtn">クラウドに保存</button>
+            <button id="cloudLoadBtn" class="secondary">クラウドから読み込み</button>
+            <button id="logoutBtn" class="light">ログアウト</button>
+          </div>
+          <div id="cloudLoggedInStatus" class="cloud-status"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>バックアップ</h2>
+        <div class="storage-box">
+          タスク内容は、この端末のブラウザにも保存されています。消えるのが怖い場合はJSONを保存してください。
+        </div>
+        <div class="actions">
+          <button id="downloadBackupBtn">JSON保存</button>
+          <button id="copyBackupBtn" class="secondary">JSONコピー</button>
+        </div>
+
+        <label for="exportBox">現在のJSON</label>
+        <textarea id="exportBox" class="code" readonly></textarea>
+      </section>
+
+      <section class="panel">
+        <h2>復元</h2>
+        <label for="backupFile">JSONファイルを選ぶ</label>
+        <input id="backupFile" type="file" accept="application/json,.json" />
+
+        <label for="importBox">またはJSONを貼り付ける</label>
+        <textarea id="importBox" class="code"></textarea>
+
+        <div class="actions">
+          <button id="importBtn">復元する</button>
+          <button id="resetBtn" class="danger">全削除</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <button id="fabAddBtn" class="fab">＋ タスク</button>
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const STORAGE_KEY = "task-slice-v1";
+    const SUPABASE_URL = "https://hgpgrjoonaqzrjeyteor.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_q4Oes8TkHU2KHKlMjsZ4EQ_MoIMoKyS";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const labels = {
+      device: { smartphone: "スマホ", pc: "PC", physical: "物理", either: "どこでも" },
+      energy: { light: "軽い", normal: "普通", heavy: "重い" },
+      kind: { write: "書く", check: "確認", contact: "連絡", organize: "整理", think: "考える", create: "作る", move: "移動", meet: "対面" },
+      status: { todo: "未着手", doing: "作業中", waiting: "確認待ち", done: "完了" }
+    };
+
+    const listLabels = {
+      mode: { parents: "親タスク中心", small: "小さい作業だけ", all: "全部" },
+      status: { open: "未完了", all: "全部", done: "完了", waiting: "確認待ち" },
+      device: { all: "環境すべて", smartphone: "スマホ", pc: "PC", physical: "物理", either: "どこでも" }
+    };
+
+    const nowLabels = {
+      minutes: { 5: "5分", 10: "10分", 15: "15分", 20: "20分", 30: "30分", 60: "60分" },
+      device: { either: "全部", smartphone: "スマホ", pc: "PC", physical: "物理" },
+      energy: { light: "軽いだけ", normal: "普通まで", heavy: "重いも含む" }
+    };
+
+    const $ = (id) => document.getElementById(id);
+    let state = loadState();
+    let openParents = new Set();
+
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          if (data.projects && data.tasks) {
+            normalize(data);
+            return data;
+          }
+        } catch(e) {}
+      }
+
+      const pid = uid();
+      const parentId = uid();
+      const now = new Date().toISOString();
+      return {
+        currentProjectId: pid,
+        projects: [{ id: pid, name: "サンプル", createdAt: now }],
+        tasks: [
+          { id: parentId, projectId: pid, parentId: null, title: "受付マニュアルを作る", minutes: 30, device: "either", energy: "normal", kind: "create", status: "todo", doneCondition: "", notes: "", createdAt: now, updatedAt: now },
+          { id: uid(), projectId: pid, parentId, title: "現金支払いの流れを3行で書く", minutes: 10, device: "smartphone", energy: "normal", kind: "write", status: "todo", doneCondition: "", notes: "", createdAt: now, updatedAt: now },
+          { id: uid(), projectId: pid, parentId, title: "物販の現物を数える", minutes: 15, device: "physical", energy: "normal", kind: "check", status: "todo", doneCondition: "", notes: "", createdAt: now, updatedAt: now }
+        ]
+      };
+    }
+
+    function normalize(data) {
+      data.projects ||= [];
+      data.tasks ||= [];
+      if (!data.currentProjectId && data.projects[0]) data.currentProjectId = data.projects[0].id;
+      data.tasks.forEach(t => {
+        t.minutes = Number(t.minutes) || 10;
+        if (!labels.device[t.device]) t.device = "either";
+        if (!labels.energy[t.energy]) t.energy = "normal";
+        if (!labels.kind[t.kind]) t.kind = "write";
+        if (!labels.status[t.status]) t.status = "todo";
+        t.doneCondition ||= "";
+        t.notes ||= "";
+      });
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderExport();
+    }
+
+    function currentProject() {
+      return state.projects.find(p => p.id === state.currentProjectId) || state.projects[0];
+    }
+
+    function currentTasks() {
+      const p = currentProject();
+      return p ? state.tasks.filter(t => t.projectId === p.id) : [];
+    }
+
+    function taskById(id) { return state.tasks.find(t => t.id === id); }
+    function childrenOf(id) { return currentTasks().filter(t => t.parentId === id); }
+    function hasChildren(id) { return state.tasks.some(t => t.parentId === id); }
+    function rootTasks() { return currentTasks().filter(t => !t.parentId); }
+    function leafTasks() { return currentTasks().filter(t => !hasChildren(t.id)); }
+
+    function descendants(id) {
+      const result = [];
+      const stack = [id];
+      while (stack.length) {
+        const cur = stack.pop();
+        result.push(cur);
+        state.tasks.filter(t => t.parentId === cur).forEach(t => stack.push(t.id));
+      }
+      return result;
+    }
+
+    function esc(s) {
+      return String(s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function toast(msg) {
+      $("toast").textContent = msg;
+      $("toast").classList.add("show");
+      setTimeout(() => $("toast").classList.remove("show"), 1500);
+    }
+
+    function pathOf(t) {
+      const arr = [];
+      let cur = t;
+      while (cur) {
+        arr.unshift(cur.title);
+        cur = cur.parentId ? taskById(cur.parentId) : null;
+      }
+      return arr.join(" ＞ ");
+    }
+
+    function statsData() {
+      const tasks = currentTasks();
+      const open = tasks.filter(t => t.status !== "done");
+      return { open: open.length, small: open.filter(t => Number(t.minutes) <= 15).length, done: tasks.filter(t => t.status === "done").length };
+    }
+
+    function badgeHtml(t) {
+      let html = `
+        <span class="badge">${t.minutes}分</span>
+        <span class="badge ${t.device}">${labels.device[t.device]}</span>
+      `;
+      if (t.status === "waiting") html += `<span class="badge waiting">確認待ち</span>`;
+      if (t.status === "done") html += `<span class="badge">完了</span>`;
+      if (Number(t.minutes) > 20 && !hasChildren(t.id)) html += `<span class="badge warn">大きい</span>`;
+      return html;
+    }
+
+    function taskSummary(t) {
+      const children = childrenOf(t.id);
+      if (!children.length) return "";
+      const open = children.filter(c => c.status !== "done").length;
+      const small = children.filter(c => c.status !== "done" && Number(c.minutes) <= 15).length;
+      return `<span class="badge summary">子${children.length}・未${open}・15内${small}</span>`;
+    }
+
+    function parentOptions(selected, excludeId = null) {
+      const exclude = new Set(excludeId ? descendants(excludeId) : []);
+      let html = `<option value="">親なし</option>`;
+      const tasks = currentTasks().filter(t => !exclude.has(t.id));
+
+      function add(t, depth) {
+        const pad = "　".repeat(depth);
+        html += `<option value="${t.id}" ${selected === t.id ? "selected" : ""}>${pad}└ ${esc(t.title)}</option>`;
+        tasks.filter(c => c.parentId === t.id).forEach(c => add(c, depth + 1));
+      }
+
+      tasks.filter(t => !t.parentId).forEach(t => add(t, 0));
+      return html;
+    }
+
+    function renderTask(t, opts = {}) {
+      const child = !!opts.child;
+      const isDone = t.status === "done";
+      const hasChild = hasChildren(t.id);
+      const open = openParents.has(t.id);
+      const detailId = `detail-${t.id}`;
+      const cls = child ? "child-row" : "task-card";
+      const el = document.createElement("div");
+      el.className = `${cls} dev-${t.device} ${isDone ? "done" : ""}`;
+
+      el.innerHTML = `
+        <div class="task-main">
+          <div class="task-top">
+            <button class="check ${isDone ? "done" : ""}" data-action="toggle" data-id="${t.id}">✓</button>
+            <div>
+              ${t.parentId && !child ? `<div class="path">${esc(pathOf(t))}</div>` : ""}
+              <div class="title ${!t.parentId ? "parent-title" : ""}">${esc(t.title)}</div>
+              <div class="badges">${badgeHtml(t)}${taskSummary(t)}</div>
+            </div>
+            <div class="actions" style="margin-top:0;">
+              <button class="tiny secondary" data-action="child" data-id="${t.id}">＋子</button>
+              <button class="tiny light" data-action="${hasChild ? "expand" : "detail"}" data-id="${t.id}">${hasChild ? (open ? "隠す" : "分解") : "詳細"}</button>
+            </div>
+          </div>
+
+          <div id="${detailId}" class="details hidden">
+            ${t.doneCondition ? `<div class="details-box"><b>完了条件</b>${esc(t.doneCondition)}</div>` : ""}
+            ${t.notes ? `<div class="details-box"><b>メモ</b>${esc(t.notes)}</div>` : ""}
+            <div class="move-row">
+              <div>
+                <label for="move-${t.id}">このタスクを別の親の下へ移動</label>
+                <select id="move-${t.id}" data-move-select="${t.id}">
+                  ${parentOptions(t.parentId || "", t.id)}
+                </select>
+              </div>
+              <button class="small secondary" data-action="move" data-id="${t.id}">移動</button>
+            </div>
+            <div class="actions">
+              <button class="small light" data-action="edit" data-id="${t.id}">編集</button>
+              <button class="small light" data-action="waiting" data-id="${t.id}">確認待ち</button>
+              <button class="small danger" data-action="delete" data-id="${t.id}">削除</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (hasChild && open && !child) {
+        const box = document.createElement("div");
+        box.className = "children";
+        childrenOf(t.id).forEach(c => box.appendChild(renderTask(c, { child: true })));
+
+        const addBtn = document.createElement("button");
+        addBtn.className = "small secondary";
+        addBtn.textContent = "＋ この下に追加";
+        addBtn.dataset.action = "child";
+        addBtn.dataset.id = t.id;
+        box.appendChild(addBtn);
+        el.appendChild(box);
+      }
+
+      return el;
+    }
+
+    function renderProject() {
+      const select = $("projectSelect");
+      select.innerHTML = "";
+      state.projects.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name;
+        opt.selected = p.id === state.currentProjectId;
+        select.appendChild(opt);
+      });
+
+      const p = currentProject();
+      const s = statsData();
+      $("miniProjectName").textContent = p ? p.name : "プロジェクト";
+      $("miniOpen").textContent = `未完了${s.open}`;
+      $("miniSmall").textContent = `15分${s.small}`;
+      $("miniDone").textContent = `完了${s.done}`;
+    }
+
+    function renderParentSelect() {
+      const editing = $("editingTaskId").value || null;
+      const selected = $("parentTask").value || "";
+      $("parentTask").innerHTML = parentOptions(selected, editing);
+    }
+
+    function renderListCondition() {
+      $("listConditionLine").innerHTML = `
+        <span class="condition-chip">${listLabels.mode[$("listMode").value]}</span>
+        <span class="condition-chip">${listLabels.status[$("listStatus").value]}</span>
+        <span class="condition-chip">${listLabels.device[$("listDevice").value]}</span>
+      `;
+    }
+
+    function renderTaskList() {
+      renderListCondition();
+      const list = $("taskList");
+      list.innerHTML = "";
+      const mode = $("listMode").value;
+      const status = $("listStatus").value;
+      const device = $("listDevice").value;
+      let tasks = mode === "parents" ? rootTasks() : mode === "small" ? leafTasks() : currentTasks();
+
+      if (status === "open") tasks = tasks.filter(t => t.status !== "done");
+      if (status === "done") tasks = tasks.filter(t => t.status === "done");
+      if (status === "waiting") tasks = tasks.filter(t => t.status === "waiting");
+      if (device !== "all") tasks = tasks.filter(t => t.device === device);
+
+      if (!tasks.length) {
+        list.innerHTML = `<div class="empty">表示するタスクがありません。</div>`;
+        return;
+      }
+      tasks.forEach(t => list.appendChild(renderTask(t)));
+    }
+
+    function renderNowCondition() {
+      $("nowConditionLine").innerHTML = `
+        <span class="condition-chip">${nowLabels.minutes[$("filterMinutes").value]}以内</span>
+        <span class="condition-chip">${nowLabels.device[$("filterDevice").value]}</span>
+        <span class="condition-chip">${nowLabels.energy[$("filterEnergy").value]}</span>
+      `;
+    }
+
+    function renderNow() {
+      renderNowCondition();
+      const list = $("nowList");
+      list.innerHTML = "";
+
+      const maxMin = Number($("filterMinutes").value);
+      const device = $("filterDevice").value;
+      const energy = $("filterEnergy").value;
+      const rank = { light: 1, normal: 2, heavy: 3 };
+      const maxEnergy = rank[energy];
+
+      let tasks = leafTasks().filter(t => t.status !== "done" && t.status !== "waiting");
+      tasks = tasks.filter(t => Number(t.minutes) <= maxMin);
+      tasks = tasks.filter(t => rank[t.energy] <= maxEnergy);
+      if (device !== "either") tasks = tasks.filter(t => t.device === device || t.device === "either");
+      tasks.sort((a, b) => Number(a.minutes) - Number(b.minutes));
+
+      if (!tasks.length) {
+        list.innerHTML = `<div class="empty">条件に合う作業がありません。</div>`;
+        return;
+      }
+      tasks.forEach(t => list.appendChild(renderTask(t)));
+    }
+
+    function renderExport() {
+      if ($("exportBox")) $("exportBox").value = JSON.stringify(state, null, 2);
+    }
+
+    function renderAll() {
+      renderProject();
+      renderParentSelect();
+      renderTaskList();
+      renderNow();
+      renderExport();
+    }
+
+    function showView(view) {
+      document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+      $("view-" + view).classList.remove("hidden");
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.view === view));
+      if (view === "list") renderTaskList();
+      if (view === "now") renderNow();
+      if (view === "backup") renderExport();
+    }
+
+    function clearForm() {
+      $("editingTaskId").value = "";
+      $("formTitle").textContent = "タスク追加";
+      $("taskTitle").value = "";
+      $("parentTask").value = "";
+      $("taskMinutes").value = "10";
+      $("taskDevice").value = "either";
+      $("taskStatus").value = "todo";
+      $("taskEnergy").value = "normal";
+      $("taskKind").value = "write";
+      $("taskDoneCondition").value = "";
+      $("taskNotes").value = "";
+      $("advancedPanel").classList.add("hidden");
+      $("advancedToggleBtn").textContent = "完了条件・メモ";
+      renderParentSelect();
+    }
+
+    function goAdd(parentId = "") {
+      clearForm();
+      if (parentId) $("parentTask").value = parentId;
+      showView("add");
+      setTimeout(() => $("taskTitle").focus(), 120);
+    }
+
+    function saveTaskFromForm() {
+      const title = $("taskTitle").value.trim();
+      if (!title) return toast("タスク名を入れてください");
+      const id = $("editingTaskId").value;
+      const now = new Date().toISOString();
+      const data = {
+        projectId: currentProject().id,
+        parentId: $("parentTask").value || null,
+        title,
+        minutes: Number($("taskMinutes").value),
+        device: $("taskDevice").value,
+        status: $("taskStatus").value,
+        energy: $("taskEnergy").value,
+        kind: $("taskKind").value,
+        doneCondition: $("taskDoneCondition").value.trim(),
+        notes: $("taskNotes").value.trim(),
+        updatedAt: now
+      };
+
+      if (id) {
+        Object.assign(taskById(id), data);
+        toast("更新しました");
+      } else {
+        state.tasks.push({ id: uid(), ...data, createdAt: now });
+        toast("追加しました");
+      }
+
+      saveState();
+      clearForm();
+      renderAll();
+      showView("list");
+    }
+
+    function editTask(id) {
+      const t = taskById(id);
+      if (!t) return;
+      $("editingTaskId").value = t.id;
+      $("formTitle").textContent = "タスク編集";
+      $("taskTitle").value = t.title;
+      renderParentSelect();
+      $("parentTask").value = t.parentId || "";
+      $("taskMinutes").value = String(t.minutes);
+      $("taskDevice").value = t.device;
+      $("taskStatus").value = t.status;
+      $("taskEnergy").value = t.energy;
+      $("taskKind").value = t.kind;
+      $("taskDoneCondition").value = t.doneCondition || "";
+      $("taskNotes").value = t.notes || "";
+      if (t.doneCondition || t.notes) {
+        $("advancedPanel").classList.remove("hidden");
+        $("advancedToggleBtn").textContent = "閉じる";
+      }
+      showView("add");
+      setTimeout(() => $("taskTitle").focus(), 120);
+    }
+
+    function setStatus(id, status) {
+      const t = taskById(id);
+      if (!t) return;
+      t.status = status;
+      t.updatedAt = new Date().toISOString();
+      saveState();
+      renderAll();
+    }
+
+    function toggleDone(id) {
+      const t = taskById(id);
+      if (!t) return;
+      if (t.status === "done") {
+        setStatus(id, "todo");
+        toast("未完了に戻しました");
+      } else {
+        setStatus(id, "done");
+        toast("完了しました");
+      }
+    }
+
+    function deleteTask(id) {
+      const t = taskById(id);
+      if (!t) return;
+      if (!confirm(`「${t.title}」と子タスクを削除しますか？`)) return;
+      const ids = new Set(descendants(id));
+      state.tasks = state.tasks.filter(t => !ids.has(t.id));
+      saveState();
+      renderAll();
+      toast("削除しました");
+    }
+
+    function moveTask(id) {
+      const t = taskById(id);
+      const select = document.querySelector(`[data-move-select="${id}"]`);
+      if (!t || !select) return;
+      const newParent = select.value || null;
+      if (newParent === id) return toast("自分自身には移動できません");
+      if (newParent && descendants(id).includes(newParent)) return toast("子タスクの下には移動できません");
+      t.parentId = newParent;
+      t.updatedAt = new Date().toISOString();
+      saveState();
+      renderAll();
+      openParents.add(newParent);
+      toast(newParent ? "子タスクとして移動しました" : "親なしに移動しました");
+    }
+
+    function toggleDetails(id) {
+      const el = document.getElementById(`detail-${id}`);
+      if (el) el.classList.toggle("hidden");
+    }
+
+    function toggleExpand(id) {
+      if (openParents.has(id)) openParents.delete(id);
+      else openParents.add(id);
+      renderTaskList();
+      renderNow();
+    }
+
+    function downloadBackup() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      a.href = URL.createObjectURL(blob);
+      a.download = `task-slice-backup-${date}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      toast("JSONを保存しました");
+    }
+
+    function importData(raw) {
+      try {
+        const data = JSON.parse(raw);
+        if (!data.projects || !data.tasks) throw new Error("invalid");
+        if (!confirm("現在のデータを置き換えて復元しますか？")) return;
+        normalize(data);
+        state = data;
+        saveState();
+        clearForm();
+        renderAll();
+        showView("list");
+        toast("復元しました");
+      } catch(e) {
+        toast("読み込めません");
+      }
+    }
+
+    async function refreshAuthUI() {
+      const { data } = await supabaseClient.auth.getSession();
+      const session = data?.session;
+      if (session?.user) {
+        $("cloudLoggedOut").classList.add("hidden");
+        $("cloudLoggedIn").classList.remove("hidden");
+        $("syncUserEmail").textContent = session.user.email || "";
+      } else {
+        $("cloudLoggedOut").classList.remove("hidden");
+        $("cloudLoggedIn").classList.add("hidden");
+        $("syncUserEmail").textContent = "";
+      }
+    }
+
+    async function sendLoginLink() {
+      const email = $("syncEmail").value.trim();
+      if (!email) return toast("メールを入れてください");
+      $("cloudLoggedOutStatus").textContent = "送信中...";
+      const redirectTo = window.location.origin + window.location.pathname;
+      const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+      if (error) {
+        $("cloudLoggedOutStatus").textContent = "送信できませんでした：" + error.message;
+        return toast("送信できませんでした");
+      }
+      $("cloudLoggedOutStatus").textContent = "ログインリンクを送信しました。メールを確認してください。";
+      toast("送信しました");
+    }
+
+    async function getCurrentUser() {
+      const { data, error } = await supabaseClient.auth.getUser();
+      if (error || !data?.user) return null;
+      return data.user;
+    }
+
+    async function cloudSave() {
+      const user = await getCurrentUser();
+      if (!user) return toast("ログインしてください");
+      $("cloudLoggedInStatus").textContent = "保存中...";
+      const { error } = await supabaseClient.from("task_slice_data").upsert({
+        user_id: user.id,
+        data: state,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+      if (error) {
+        $("cloudLoggedInStatus").textContent = "保存できません：" + error.message;
+        return toast("保存できません");
+      }
+      $("cloudLoggedInStatus").textContent = "クラウドに保存しました。";
+      toast("保存しました");
+    }
+
+    async function cloudLoad() {
+      const user = await getCurrentUser();
+      if (!user) return toast("ログインしてください");
+      if (!confirm("クラウドのデータでこの端末のデータを置き換えますか？")) return;
+      $("cloudLoggedInStatus").textContent = "読み込み中...";
+      const { data, error } = await supabaseClient.from("task_slice_data").select("data, updated_at").eq("user_id", user.id).maybeSingle();
+      if (error) {
+        $("cloudLoggedInStatus").textContent = "読み込めません：" + error.message;
+        return toast("読み込めません");
+      }
+      if (!data?.data) {
+        $("cloudLoggedInStatus").textContent = "クラウドにデータがありません。";
+        return toast("データなし");
+      }
+      normalize(data.data);
+      state = data.data;
+      saveState();
+      clearForm();
+      renderAll();
+      showView("list");
+      $("cloudLoggedInStatus").textContent = `読み込みました。更新: ${data.updated_at || ""}`;
+      toast("読み込みました");
+    }
+
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      await refreshAuthUI();
+      toast("ログアウトしました");
+    }
+
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => showView(btn.dataset.view));
+    });
+
+    document.addEventListener("click", e => {
+      const action = e.target?.dataset?.action;
+      const id = e.target?.dataset?.id;
+      if (!action || !id) return;
+      if (action === "toggle") toggleDone(id);
+      if (action === "child") goAdd(id);
+      if (action === "detail") toggleDetails(id);
+      if (action === "expand") toggleExpand(id);
+      if (action === "edit") editTask(id);
+      if (action === "waiting") setStatus(id, "waiting");
+      if (action === "delete") deleteTask(id);
+      if (action === "move") moveTask(id);
+    });
+
+    $("topAddBtn").addEventListener("click", () => goAdd());
+    $("fabAddBtn").addEventListener("click", () => goAdd());
+    $("saveTaskBtn").addEventListener("click", saveTaskFromForm);
+    $("clearFormBtn").addEventListener("click", clearForm);
+
+    $("projectSettingsBtn").addEventListener("click", () => {
+      $("projectSettings").classList.toggle("hidden");
+      $("projectSettingsBtn").textContent = $("projectSettings").classList.contains("hidden") ? "設定" : "閉じる";
+    });
+
+    $("addProjectBtn").addEventListener("click", () => {
+      const name = $("newProjectName").value.trim();
+      if (!name) return toast("名前を入れてください");
+      const id = uid();
+      state.projects.push({ id, name, createdAt: new Date().toISOString() });
+      state.currentProjectId = id;
+      $("newProjectName").value = "";
+      saveState();
+      clearForm();
+      renderAll();
+      toast("作成しました");
+    });
+
+    $("deleteProjectBtn").addEventListener("click", () => {
+      const p = currentProject();
+      if (!p) return;
+      if (state.projects.length <= 1) return toast("最後の1つは削除不可");
+      if (!confirm(`「${p.name}」を削除しますか？`)) return;
+      state.projects = state.projects.filter(x => x.id !== p.id);
+      state.tasks = state.tasks.filter(t => t.projectId !== p.id);
+      state.currentProjectId = state.projects[0].id;
+      saveState();
+      clearForm();
+      renderAll();
+    });
+
+    $("projectSelect").addEventListener("change", e => {
+      state.currentProjectId = e.target.value;
+      openParents = new Set();
+      saveState();
+      clearForm();
+      renderAll();
+    });
+
+    $("listFilterBtn").addEventListener("click", () => {
+      $("listFilterPanel").classList.toggle("hidden");
+      $("listFilterBtn").textContent = $("listFilterPanel").classList.contains("hidden") ? "絞込" : "閉じる";
+    });
+
+    $("nowFilterBtn").addEventListener("click", () => {
+      $("nowFilterPanel").classList.toggle("hidden");
+      $("nowFilterBtn").textContent = $("nowFilterPanel").classList.contains("hidden") ? "条件" : "閉じる";
+    });
+
+    $("advancedToggleBtn").addEventListener("click", () => {
+      $("advancedPanel").classList.toggle("hidden");
+      $("advancedToggleBtn").textContent = $("advancedPanel").classList.contains("hidden") ? "完了条件・メモ" : "閉じる";
+    });
+
+    ["listMode", "listStatus", "listDevice"].forEach(id => $(id).addEventListener("change", renderTaskList));
+    ["filterMinutes", "filterDevice", "filterEnergy"].forEach(id => $(id).addEventListener("change", renderNow));
+
+    $("downloadBackupBtn").addEventListener("click", downloadBackup);
+    $("copyBackupBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+        toast("コピーしました");
+      } catch(e) {
+        toast("コピーできません");
+      }
+    });
+
+    $("backupFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => importData(reader.result);
+      reader.readAsText(file);
+    });
+
+    $("importBtn").addEventListener("click", () => {
+      const raw = $("importBox").value.trim();
+      if (!raw) return toast("JSONを貼ってください");
+      importData(raw);
+    });
+
+    $("resetBtn").addEventListener("click", () => {
+      if (!confirm("全データを削除しますか？")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = loadState();
+      openParents = new Set();
+      clearForm();
+      renderAll();
+      showView("list");
+    });
+
+    $("sendLoginLinkBtn").addEventListener("click", sendLoginLink);
+    $("cloudSaveBtn").addEventListener("click", cloudSave);
+    $("cloudLoadBtn").addEventListener("click", cloudLoad);
+    $("logoutBtn").addEventListener("click", logout);
+    supabaseClient.auth.onAuthStateChange(() => refreshAuthUI());
+
+    renderAll();
+    showView("list");
+    refreshAuthUI();
+  </script>
+</body>
+</html>

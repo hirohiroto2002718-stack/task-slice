@@ -487,6 +487,19 @@
       margin-top: 8px;
     }
 
+
+    .child-row .children {
+      margin-top: 8px;
+      margin-left: 10px;
+      border-left: 2px dashed rgba(236, 216, 204, .95);
+      border-top: 0;
+      border-radius: 14px;
+    }
+
+    .child-row .child-row {
+      border-radius: 14px;
+    }
+
     .empty {
       background: rgba(255,255,255,.78);
       border: 1px dashed #e5cdbd;
@@ -671,7 +684,7 @@
           <div>
             <div class="section-line">
               <h2>一覧</h2>
-              <p class="hint">追加後のタスクも、詳細から好きな親タスクの下へ移動できます。</p>
+              <p class="hint">子タスクの下にも、さらに子タスクを作れます。どこまでも分解できます。</p>
             </div>
             <div id="listConditionLine" class="condition-line"></div>
           </div>
@@ -1137,7 +1150,7 @@
         </div>
       `;
 
-      if (hasChild && open && !child) {
+      if (hasChild && open) {
         const box = document.createElement("div");
         box.className = "children";
         childrenOf(t.id).forEach(c => box.appendChild(renderTask(c, { child: true })));
@@ -1382,9 +1395,9 @@
       if (newParent && descendants(id).includes(newParent)) return toast("子タスクの下には移動できません");
       t.parentId = newParent;
       t.updatedAt = new Date().toISOString();
+      if (newParent) openParents.add(newParent);
       saveState();
       renderAll();
-      openParents.add(newParent);
       toast(newParent ? "子タスクとして移動しました" : "親なしに移動しました");
     }
 

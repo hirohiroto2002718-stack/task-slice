@@ -592,7 +592,7 @@
 
     .main-add-grid {
       display: grid;
-      grid-template-columns: 1.2fr .8fr .45fr;
+      grid-template-columns: 1.15fr .75fr .55fr .45fr;
       gap: 8px;
     }
 
@@ -701,6 +701,84 @@
       border-color: rgba(183, 121, 31, .32);
       background:
         linear-gradient(90deg, rgba(254, 243, 199, .70), rgba(255, 255, 255, .94) 40%),
+        rgba(255,255,255,.94);
+    }
+
+
+    .badge.deadline-overdue {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .badge.deadline-today {
+      background: #ffedd5;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+    }
+
+    .badge.deadline-soon {
+      background: #fef3c7;
+      color: #b7791f;
+      border: 1px solid #fde68a;
+    }
+
+    .badge.deadline-future {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .deadline-mark {
+      display: inline-flex;
+      width: fit-content;
+      margin-bottom: 3px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 950;
+      line-height: 1.35;
+    }
+
+    .deadline-mark.overdue {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .deadline-mark.today {
+      background: #ffedd5;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+    }
+
+    .deadline-mark.soon {
+      background: #fef3c7;
+      color: #b7791f;
+      border: 1px solid #fde68a;
+    }
+
+    .task-card.deadline-overdue,
+    .child-row.deadline-overdue {
+      border-color: rgba(220, 38, 38, .40);
+      background:
+        linear-gradient(90deg, rgba(254, 226, 226, .78), rgba(255, 255, 255, .94) 42%),
+        rgba(255,255,255,.94);
+    }
+
+    .task-card.deadline-today,
+    .child-row.deadline-today {
+      border-color: rgba(194, 65, 12, .34);
+      background:
+        linear-gradient(90deg, rgba(255, 237, 213, .82), rgba(255, 255, 255, .94) 42%),
+        rgba(255,255,255,.94);
+    }
+
+    .task-card.deadline-soon,
+    .child-row.deadline-soon {
+      border-color: rgba(183, 121, 31, .28);
+      background:
+        linear-gradient(90deg, rgba(254, 243, 199, .70), rgba(255, 255, 255, .94) 42%),
         rgba(255,255,255,.94);
     }
 
@@ -886,7 +964,7 @@
           <div>
             <div class="section-line">
               <h2>一覧</h2>
-              <p class="hint">重要度をつけると、一覧と自動計画で先に並びます。</p>
+              <p class="hint">期限が近いものは、一覧と自動計画で自動的に上に上がります。</p>
             </div>
             <div id="listConditionLine" class="condition-line"></div>
           </div>
@@ -933,7 +1011,7 @@
       <section class="panel add-panel">
         <div class="add-title-row">
           <h2 id="formTitle">タスク追加</h2>
-          <p class="hint">基本は名前と時間だけ。親はあとから移動でもOK。</p>
+          <p class="hint">基本は名前と時間だけ。期限を入れると、自動で上に上がります。</p>
         </div>
 
         <input type="hidden" id="editingTaskId" />
@@ -946,6 +1024,10 @@
           <div>
             <label for="parentTask">親タスク</label>
             <select id="parentTask"></select>
+          </div>
+          <div>
+            <label for="taskDeadline">期限</label>
+            <input id="taskDeadline" type="date" />
           </div>
           <div>
             <label for="taskMinutes">時間</label>
@@ -1086,7 +1168,7 @@
       <section class="panel list-head">
         <div class="section-line">
           <h2>自動計画</h2>
-          <p class="hint">未完了の小タスクだけを、優先度と時間で自動的に並べます。</p>
+          <p class="hint">未完了の小タスクだけを、期限・優先度・時間で自動的に並べます。</p>
         </div>
         <div id="ganttSummary" class="gantt-summary"></div>
       </section>
@@ -1209,9 +1291,9 @@
         currentProjectId: pid,
         projects: [{ id: pid, name: "サンプル", createdAt: now }],
         tasks: [
-          { id: parentId, projectId: pid, parentId: null, title: "受付マニュアルを作る", minutes: 30, device: "either", energy: "normal", kind: "create", status: "todo", priority: "normal", doneCondition: "", notes: "", createdAt: now, updatedAt: now },
-          { id: uid(), projectId: pid, parentId, title: "現金支払いの流れを3行で書く", minutes: 10, device: "smartphone", energy: "normal", kind: "write", status: "todo", priority: "normal", doneCondition: "", notes: "", createdAt: now, updatedAt: now },
-          { id: uid(), projectId: pid, parentId, title: "物販の現物を数える", minutes: 15, device: "physical", energy: "normal", kind: "check", status: "todo", priority: "normal", doneCondition: "", notes: "", createdAt: now, updatedAt: now }
+          { id: parentId, projectId: pid, parentId: null, title: "受付マニュアルを作る", minutes: 30, device: "either", energy: "normal", kind: "create", status: "todo", priority: "normal", deadline: "", doneCondition: "", notes: "", createdAt: now, updatedAt: now },
+          { id: uid(), projectId: pid, parentId, title: "現金支払いの流れを3行で書く", minutes: 10, device: "smartphone", energy: "normal", kind: "write", status: "todo", priority: "normal", deadline: "", doneCondition: "", notes: "", createdAt: now, updatedAt: now },
+          { id: uid(), projectId: pid, parentId, title: "物販の現物を数える", minutes: 15, device: "physical", energy: "normal", kind: "check", status: "todo", priority: "normal", deadline: "", doneCondition: "", notes: "", createdAt: now, updatedAt: now }
         ]
       };
     }
@@ -1227,6 +1309,7 @@
         if (!labels.kind[t.kind]) t.kind = "write";
         if (!labels.status[t.status]) t.status = "todo";
         if (!labels.priority[t.priority]) t.priority = "normal";
+        t.deadline ||= "";
         t.doneCondition ||= "";
         t.notes ||= "";
       });
@@ -1299,12 +1382,90 @@
       return t.priority === "first" ? 0 : t.priority === "important" ? 1 : 2;
     }
 
+    function todayLocalDate() {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function dateFromInput(value) {
+      if (!value) return null;
+      const d = new Date(value + "T00:00:00");
+      if (Number.isNaN(d.getTime())) return null;
+      return d;
+    }
+
+    function daysUntilDeadline(t) {
+      const d = dateFromInput(t.deadline);
+      if (!d) return null;
+      return Math.round((d.getTime() - todayLocalDate().getTime()) / 86400000);
+    }
+
+    function deadlineUrgencyRank(t) {
+      const days = daysUntilDeadline(t);
+      if (days === null) return 6;
+      if (days < 0) return 0;
+      if (days === 0) return 1;
+      if (days === 1) return 2;
+      if (days <= 3) return 3;
+      if (days <= 7) return 4;
+      return 5;
+    }
+
+    function deadlineDateValue(t) {
+      const d = dateFromInput(t.deadline);
+      return d ? d.getTime() : Number.POSITIVE_INFINITY;
+    }
+
+    function deadlineLabel(t) {
+      const days = daysUntilDeadline(t);
+      if (days === null) return "";
+      if (days < 0) return `期限切れ ${Math.abs(days)}日`;
+      if (days === 0) return "今日まで";
+      if (days === 1) return "明日まで";
+      if (days <= 7) return `${days}日後`;
+      const d = dateFromInput(t.deadline);
+      return `${d.getMonth() + 1}/${d.getDate()}まで`;
+    }
+
+    function deadlineClass(t) {
+      const days = daysUntilDeadline(t);
+      if (days === null) return "";
+      if (days < 0) return "deadline-overdue";
+      if (days === 0) return "deadline-today";
+      if (days <= 7) return "deadline-soon";
+      return "deadline-future";
+    }
+
+    function deadlineBadgeHtml(t) {
+      const label = deadlineLabel(t);
+      if (!label) return "";
+      return `<span class="badge ${deadlineClass(t)}">⏰ ${label}</span>`;
+    }
+
+    function deadlineMarkHtml(t) {
+      const days = daysUntilDeadline(t);
+      if (days === null || days > 7) return "";
+      if (days < 0) return `<div class="deadline-mark overdue">🚨 期限切れ・${Math.abs(days)}日</div>`;
+      if (days === 0) return `<div class="deadline-mark today">⏰ 今日まで</div>`;
+      return `<div class="deadline-mark soon">⏳ ${days}日後まで</div>`;
+    }
+
     function sortByPriorityAndTime(tasks) {
       return [...tasks].sort((a, b) => {
+        const da = deadlineUrgencyRank(a);
+        const db = deadlineUrgencyRank(b);
+        if (da !== db) return da - db;
+
+        const dd = deadlineDateValue(a) - deadlineDateValue(b);
+        if (dd !== 0 && Number.isFinite(dd)) return dd;
+
         const pr = priorityRank(a) - priorityRank(b);
         if (pr !== 0) return pr;
+
         const mt = Number(a.minutes) - Number(b.minutes);
         if (mt !== 0) return mt;
+
         return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
       });
     }
@@ -1318,6 +1479,7 @@
     function badgeHtml(t) {
       let html = `
         <span class="badge">${t.minutes}分</span>
+        ${deadlineBadgeHtml(t)}
         <span class="badge ${t.device}">${labels.device[t.device]}</span>
       `;
       if (t.priority === "first") html += `<span class="badge priority-first">🔥先</span>`;
@@ -1359,7 +1521,7 @@
       const detailId = `detail-${t.id}`;
       const cls = child ? "child-row" : "task-card";
       const el = document.createElement("div");
-      el.className = `${cls} dev-${t.device} ${hasChild ? "has-children" : ""} ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""} ${isDone ? "done" : ""}`;
+      el.className = `${cls} dev-${t.device} ${deadlineClass(t)} ${hasChild ? "has-children" : ""} ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""} ${isDone ? "done" : ""}`;
 
       el.innerHTML = `
         <div class="task-main">
@@ -1367,6 +1529,7 @@
             <button class="check ${isDone ? "done" : ""}" data-action="toggle" data-id="${t.id}">✓</button>
             <div>
               ${t.parentId && !child ? `<div class="path">${esc(pathOf(t))}</div>` : ""}
+              ${deadlineMarkHtml(t)}
               ${priorityMarkHtml(t)}
               ${hasChild ? `<div class="split-alert">🍰 分解あり・子${childrenOf(t.id).length}</div>` : ""}
               <div class="title ${!t.parentId ? "parent-title" : ""}">${esc(t.title)}</div>
@@ -1524,6 +1687,11 @@
       summary.innerHTML = `
         <span class="condition-chip">未完了小タスク ${tasks.length}</span>
         <span class="condition-chip">合計 ${minutesToLabel(total)}</span>
+        <span class="condition-chip">⏰期限あり ${tasks.filter(t => t.deadline).length}</span>
+        <span class="condition-chip">🚨今日/切れ ${tasks.filter(t => {
+          const d = daysUntilDeadline(t);
+          return d !== null && d <= 0;
+        }).length}</span>
         <span class="condition-chip">🔥先 ${tasks.filter(t => t.priority === "first").length}</span>
         <span class="condition-chip">⭐重要 ${tasks.filter(t => t.priority === "important").length}</span>
       `;
@@ -1552,7 +1720,10 @@
               <div class="gantt-title">${i + 1}. ${esc(t.title)}</div>
               <div class="gantt-path">${esc(pathOf(t))}</div>
             </div>
-            <span class="badge ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""}">${priorityLabel}</span>
+            <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
+              ${deadlineBadgeHtml(t)}
+              <span class="badge ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""}">${priorityLabel}</span>
+            </div>
           </div>
           <div class="gantt-bar">
             <div class="gantt-fill ${priorityClass}" style="width:${width}%"></div>
@@ -1590,6 +1761,7 @@
       $("formTitle").textContent = "タスク追加";
       $("taskTitle").value = "";
       $("parentTask").value = "";
+      $("taskDeadline").value = "";
       $("taskMinutes").value = "10";
       $("taskDevice").value = "either";
       $("taskStatus").value = "todo";
@@ -1619,6 +1791,7 @@
         projectId: currentProject().id,
         parentId: $("parentTask").value || null,
         title,
+        deadline: $("taskDeadline").value || "",
         minutes: Number($("taskMinutes").value),
         device: $("taskDevice").value,
         status: $("taskStatus").value,
@@ -1652,6 +1825,7 @@
       $("taskTitle").value = t.title;
       renderParentSelect();
       $("parentTask").value = t.parentId || "";
+      $("taskDeadline").value = t.deadline || "";
       $("taskMinutes").value = String(t.minutes);
       $("taskDevice").value = t.device;
       $("taskStatus").value = t.status;

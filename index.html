@@ -1089,6 +1089,105 @@
       }
     }
 
+
+    .brand-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      padding: 4px 8px;
+      font-size: 10.5px;
+      font-weight: 950;
+      white-space: nowrap;
+      box-shadow: 0 3px 9px rgba(111, 78, 55, .06);
+    }
+
+    .sync-pill.saved {
+      background: #dcfce7;
+      border-color: #bbf7d0;
+      color: #15803d;
+    }
+
+    .sync-pill.saving {
+      background: #e0f2fe;
+      border-color: #bae6fd;
+      color: #0369a1;
+    }
+
+    .sync-pill.unsynced,
+    .sync-pill.local {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #9a3412;
+    }
+
+    .sync-pill.error {
+      background: #fee2e2;
+      border-color: #fecaca;
+      color: #dc2626;
+    }
+
+    @media (max-width: 540px) {
+      .sync-pill {
+        max-width: 74px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        justify-content: center;
+      }
+    }
+
+
+    .badge.child-deadline-overdue {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+
+    .badge.child-deadline-today {
+      background: #ffedd5;
+      color: #c2410c;
+      border-color: #fed7aa;
+    }
+
+    .badge.child-deadline-soon {
+      background: #fef3c7;
+      color: #b7791f;
+      border-color: #fde68a;
+    }
+
+    .task-card.child-deadline-overdue,
+    .child-row.child-deadline-overdue {
+      border-left-color: #dc2626;
+      background:
+        linear-gradient(90deg, rgba(254, 226, 226, .62), rgba(255,255,255,.94) 44%),
+        rgba(255,255,255,.94);
+    }
+
+    .task-card.child-deadline-today,
+    .child-row.child-deadline-today {
+      border-left-color: #c2410c;
+      background:
+        linear-gradient(90deg, rgba(255, 237, 213, .68), rgba(255,255,255,.94) 44%),
+        rgba(255,255,255,.94);
+    }
+
+    .task-card.child-deadline-soon,
+    .child-row.child-deadline-soon {
+      border-left-color: #b7791f;
+      background:
+        linear-gradient(90deg, rgba(254, 243, 199, .62), rgba(255,255,255,.94) 44%),
+        rgba(255,255,255,.94);
+    }
+
     .toast {
       position: fixed;
       left: 50%;
@@ -1138,7 +1237,7 @@
           <h1>Task Slice 🍰</h1>
           <p>大きいタスクを小さく切る</p>
         </div>
-        <button id="topAddBtn" class="small">＋追加</button>
+        <div class="brand-actions"><span id="syncStatusPill" class="sync-pill local">☁ ローカル</span><button id="topAddBtn" class="small">＋追加</button></div>
       </div>
       <nav class="tabs">
         <button class="tab active" data-view="list">一覧</button>
@@ -1184,7 +1283,7 @@
           <div>
             <div class="section-line">
               <h2>一覧</h2>
-              <p class="hint">スマホで多く見えるよう、タスク名・期限・重要度・分解だけに絞りました。</p>
+              <p class="hint">子タスク内に期限近いものがある親にも、目印を出します。</p>
             </div>
             <div id="listConditionLine" class="condition-line"></div>
           </div>
@@ -1460,9 +1559,17 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const STORAGE_KEY = "task-slice-v1";
+    const LOCAL_UPDATED_KEY = "task-slice-local-updated-at";
+    const CLOUD_UPDATED_KEY = "task-slice-cloud-updated-at";
     const SUPABASE_URL = "https://hgpgrjoonaqzrjeyteor.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_q4Oes8TkHU2KHKlMjsZ4EQ_MoIMoKyS";
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
 
     const labels = {
       device: { smartphone: "スマホ", pc: "PC", physical: "物理", either: "どこでも" },
@@ -1487,6 +1594,9 @@
     const $ = (id) => document.getElementById(id);
     let state = loadState();
     let openParents = new Set();
+    let autoSaveTimer = null;
+    let isApplyingRemote = false;
+    let autoSyncStarted = false;
 
     function uid() {
       return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1535,9 +1645,48 @@
       });
     }
 
-    function saveState() {
+    function nowIso() {
+      return new Date().toISOString();
+    }
+
+    function getLocalUpdatedAt() {
+      return localStorage.getItem(LOCAL_UPDATED_KEY) || "";
+    }
+
+    function setLocalUpdatedAt(value = nowIso()) {
+      localStorage.setItem(LOCAL_UPDATED_KEY, value);
+    }
+
+    function setCloudUpdatedAt(value = nowIso()) {
+      localStorage.setItem(CLOUD_UPDATED_KEY, value);
+    }
+
+    function setSyncStatus(kind, text) {
+      const pill = $("syncStatusPill");
+      if (pill) {
+        pill.className = `sync-pill ${kind}`;
+        pill.textContent = text;
+      }
+      const status = $("cloudLoggedInStatus");
+      if (status && text) status.textContent = text;
+    }
+
+    function saveState(options = {}) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!options.fromCloud) setLocalUpdatedAt();
       renderExport();
+      if (!options.skipAutoSync && !isApplyingRemote) {
+        scheduleAutoSave();
+      }
+    }
+
+    function scheduleAutoSave() {
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      setSyncStatus("unsynced", "☁ 未同期");
+      autoSaveTimer = setTimeout(() => {
+        autoSaveTimer = null;
+        cloudAutoSave();
+      }, 1500);
     }
 
     function currentProject() {
@@ -1564,6 +1713,75 @@
         state.tasks.filter(t => t.parentId === cur).forEach(t => stack.push(t.id));
       }
       return result;
+    }
+
+
+    function descendantTasksOf(id) {
+      const ids = new Set(descendants(id));
+      ids.delete(id);
+      return currentTasks().filter(t => ids.has(t.id));
+    }
+
+    function ownDeadlineDateValue(t) {
+      const d = dateFromInput(t.deadline);
+      return d ? d.getTime() : Number.POSITIVE_INFINITY;
+    }
+
+    function ownDeadlineUrgencyRank(t) {
+      const days = daysUntilDeadline(t);
+      if (days === null) return 6;
+      if (days < 0) return 0;
+      if (days === 0) return 1;
+      if (days === 1) return 2;
+      if (days <= 3) return 3;
+      if (days <= 7) return 4;
+      return 5;
+    }
+
+    function familyDeadlineTasks(t) {
+      return [t, ...descendantTasksOf(t.id)]
+        .filter(x => x.status !== "done" && daysUntilDeadline(x) !== null);
+    }
+
+    function nearestDeadlineTask(t, descendantsOnly = false) {
+      const list = descendantsOnly
+        ? descendantTasksOf(t.id).filter(x => x.status !== "done" && daysUntilDeadline(x) !== null)
+        : familyDeadlineTasks(t);
+
+      if (!list.length) return null;
+
+      return [...list].sort((a, b) => {
+        const rank = ownDeadlineUrgencyRank(a) - ownDeadlineUrgencyRank(b);
+        if (rank !== 0) return rank;
+        return ownDeadlineDateValue(a) - ownDeadlineDateValue(b);
+      })[0];
+    }
+
+    function childDeadlineBadgeHtml(t) {
+      const nearest = nearestDeadlineTask(t, true);
+      if (!nearest) return "";
+      const days = daysUntilDeadline(nearest);
+      const childCount = descendantTasksOf(t.id).filter(x => {
+        if (x.status === "done") return false;
+        const d = daysUntilDeadline(x);
+        return d !== null && d <= 7;
+      }).length;
+
+      if (days < 0) return `<span class="badge child-deadline-overdue">🚨中に期限切れ${childCount}</span>`;
+      if (days === 0) return `<span class="badge child-deadline-today">⏰中に今日${childCount}</span>`;
+      if (days === 1) return `<span class="badge child-deadline-soon">⏳中に明日${childCount}</span>`;
+      if (days <= 7) return `<span class="badge child-deadline-soon">⏳中に${days}日後${childCount}</span>`;
+      return "";
+    }
+
+    function childDeadlineClass(t) {
+      const nearest = nearestDeadlineTask(t, true);
+      if (!nearest) return "";
+      const days = daysUntilDeadline(nearest);
+      if (days < 0) return "child-deadline-overdue";
+      if (days === 0) return "child-deadline-today";
+      if (days <= 7) return "child-deadline-soon";
+      return "";
     }
 
     function esc(s) {
@@ -1622,19 +1840,15 @@
     }
 
     function deadlineUrgencyRank(t) {
-      const days = daysUntilDeadline(t);
-      if (days === null) return 6;
-      if (days < 0) return 0;
-      if (days === 0) return 1;
-      if (days === 1) return 2;
-      if (days <= 3) return 3;
-      if (days <= 7) return 4;
-      return 5;
+      const list = familyDeadlineTasks(t);
+      if (!list.length) return 6;
+      return Math.min(...list.map(x => ownDeadlineUrgencyRank(x)));
     }
 
     function deadlineDateValue(t) {
-      const d = dateFromInput(t.deadline);
-      return d ? d.getTime() : Number.POSITIVE_INFINITY;
+      const nearest = nearestDeadlineTask(t, false);
+      if (!nearest) return Number.POSITIVE_INFINITY;
+      return ownDeadlineDateValue(nearest);
     }
 
     function deadlineLabel(t) {
@@ -1701,6 +1915,7 @@
       html += deadlineBadgeHtml(t);
       if (t.priority === "first") html += `<span class="badge priority-first">🔥先</span>`;
       if (t.priority === "important") html += `<span class="badge priority-important">⭐重</span>`;
+      html += childDeadlineBadgeHtml(t);
       if (t.status === "done") html += `<span class="badge">完了</span>`;
       return html;
     }
@@ -1736,7 +1951,7 @@
       const detailId = `detail-${t.id}`;
       const cls = child ? "child-row" : "task-card";
       const el = document.createElement("div");
-      el.className = `${cls} dev-${t.device} ${deadlineClass(t)} ${hasChild ? "has-children" : ""} ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""} ${isDone ? "done" : ""}`;
+      el.className = `${cls} dev-${t.device} ${deadlineClass(t)} ${childDeadlineClass(t)} ${hasChild ? "has-children" : ""} ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""} ${isDone ? "done" : ""}`;
 
       el.innerHTML = `
         <div class="task-main">
@@ -2153,11 +2368,14 @@
         $("cloudLoggedOut").classList.add("hidden");
         $("cloudLoggedIn").classList.remove("hidden");
         $("syncUserEmail").textContent = session.user.email || "";
+        setSyncStatus("saved", "☁ ログイン済");
       } else {
         $("cloudLoggedOut").classList.remove("hidden");
         $("cloudLoggedIn").classList.add("hidden");
         $("syncUserEmail").textContent = "";
+        setSyncStatus("local", "☁ ローカル");
       }
+      return session;
     }
 
     async function sendLoginLink() {
@@ -2165,9 +2383,13 @@
       if (!email) return toast("メールを入れてください");
       $("cloudLoggedOutStatus").textContent = "送信中...";
       const redirectTo = window.location.origin + window.location.pathname;
-      const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+      const { error } = await supabaseClient.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirectTo }
+      });
       if (error) {
         $("cloudLoggedOutStatus").textContent = "送信できませんでした：" + error.message;
+        setSyncStatus("error", "☁ エラー");
         return toast("送信できませんでした");
       }
       $("cloudLoggedOutStatus").textContent = "ログインリンクを送信しました。メールを確認してください。";
@@ -2180,20 +2402,110 @@
       return data.user;
     }
 
+    async function fetchCloudRow(user) {
+      const { data, error } = await supabaseClient
+        .from("task_slice_data")
+        .select("data, updated_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    }
+
+    function applyCloudData(row) {
+      normalize(row.data);
+      isApplyingRemote = true;
+      state = row.data;
+      saveState({ fromCloud: true, skipAutoSync: true });
+      isApplyingRemote = false;
+
+      const updated = row.updated_at || nowIso();
+      setLocalUpdatedAt(updated);
+      setCloudUpdatedAt(updated);
+      clearForm();
+      renderAll();
+      showView("list");
+    }
+
+    async function cloudAutoLoadIfNeeded() {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      if (!navigator.onLine) {
+        setSyncStatus("local", "☁ オフライン");
+        return;
+      }
+
+      try {
+        setSyncStatus("saving", "☁ 確認中");
+        const row = await fetchCloudRow(user);
+        const localUpdated = Date.parse(getLocalUpdatedAt() || "0") || 0;
+
+        if (!row?.data) {
+          await cloudAutoSave({ silent: true });
+          return;
+        }
+
+        const cloudUpdated = Date.parse(row.updated_at || "0") || 0;
+
+        if (cloudUpdated > localUpdated + 1500 || !getLocalUpdatedAt()) {
+          applyCloudData(row);
+          setSyncStatus("saved", "☁ 読込済");
+          return;
+        }
+
+        if (localUpdated > cloudUpdated + 1500) {
+          await cloudAutoSave({ silent: true });
+          return;
+        }
+
+        setCloudUpdatedAt(row.updated_at || nowIso());
+        setSyncStatus("saved", "☁ 保存済み");
+      } catch (error) {
+        console.error(error);
+        setSyncStatus("error", "☁ 同期失敗");
+      }
+    }
+
+    async function cloudAutoSave(options = {}) {
+      const user = await getCurrentUser();
+      if (!user) {
+        setSyncStatus("local", "☁ ローカル");
+        return;
+      }
+
+      if (!navigator.onLine) {
+        setSyncStatus("local", "☁ オフライン");
+        return;
+      }
+
+      try {
+        setSyncStatus("saving", "☁ 保存中");
+        const updatedAt = nowIso();
+        const { error } = await supabaseClient.from("task_slice_data").upsert({
+          user_id: user.id,
+          data: state,
+          updated_at: updatedAt
+        }, { onConflict: "user_id" });
+
+        if (error) throw error;
+
+        setCloudUpdatedAt(updatedAt);
+        setLocalUpdatedAt(updatedAt);
+        setSyncStatus("saved", "☁ 保存済み");
+        if (!options.silent) $("cloudLoggedInStatus").textContent = "自動保存しました。";
+      } catch (error) {
+        console.error(error);
+        setSyncStatus("error", "☁ 保存失敗");
+        if (!options.silent) $("cloudLoggedInStatus").textContent = "保存できません：" + error.message;
+      }
+    }
+
     async function cloudSave() {
       const user = await getCurrentUser();
       if (!user) return toast("ログインしてください");
-      $("cloudLoggedInStatus").textContent = "保存中...";
-      const { error } = await supabaseClient.from("task_slice_data").upsert({
-        user_id: user.id,
-        data: state,
-        updated_at: new Date().toISOString()
-      }, { onConflict: "user_id" });
-      if (error) {
-        $("cloudLoggedInStatus").textContent = "保存できません：" + error.message;
-        return toast("保存できません");
-      }
-      $("cloudLoggedInStatus").textContent = "クラウドに保存しました。";
+      await cloudAutoSave();
       toast("保存しました");
     }
 
@@ -2201,29 +2513,40 @@
       const user = await getCurrentUser();
       if (!user) return toast("ログインしてください");
       if (!confirm("クラウドのデータでこの端末のデータを置き換えますか？")) return;
-      $("cloudLoggedInStatus").textContent = "読み込み中...";
-      const { data, error } = await supabaseClient.from("task_slice_data").select("data, updated_at").eq("user_id", user.id).maybeSingle();
-      if (error) {
+
+      try {
+        setSyncStatus("saving", "☁ 読込中");
+        const row = await fetchCloudRow(user);
+        if (!row?.data) {
+          setSyncStatus("saved", "☁ データなし");
+          return toast("データなし");
+        }
+
+        applyCloudData(row);
+        setSyncStatus("saved", "☁ 読込済");
+        $("cloudLoggedInStatus").textContent = `読み込みました。更新: ${row.updated_at || ""}`;
+        toast("読み込みました");
+      } catch (error) {
+        console.error(error);
+        setSyncStatus("error", "☁ 読込失敗");
         $("cloudLoggedInStatus").textContent = "読み込めません：" + error.message;
-        return toast("読み込めません");
+        toast("読み込めません");
       }
-      if (!data?.data) {
-        $("cloudLoggedInStatus").textContent = "クラウドにデータがありません。";
-        return toast("データなし");
+    }
+
+    async function startAutoSync() {
+      if (autoSyncStarted) return;
+      autoSyncStarted = true;
+      const session = await refreshAuthUI();
+      if (session?.user) {
+        await cloudAutoLoadIfNeeded();
       }
-      normalize(data.data);
-      state = data.data;
-      saveState();
-      clearForm();
-      renderAll();
-      showView("list");
-      $("cloudLoggedInStatus").textContent = `読み込みました。更新: ${data.updated_at || ""}`;
-      toast("読み込みました");
     }
 
     async function logout() {
       await supabaseClient.auth.signOut();
       await refreshAuthUI();
+      setSyncStatus("local", "☁ ローカル");
       toast("ログアウトしました");
     }
 
@@ -2334,6 +2657,8 @@
     $("resetBtn").addEventListener("click", () => {
       if (!confirm("全データを削除しますか？")) return;
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LOCAL_UPDATED_KEY);
+      localStorage.removeItem(CLOUD_UPDATED_KEY);
       state = loadState();
       openParents = new Set();
       clearForm();
@@ -2345,11 +2670,23 @@
     $("cloudSaveBtn").addEventListener("click", cloudSave);
     $("cloudLoadBtn").addEventListener("click", cloudLoad);
     $("logoutBtn").addEventListener("click", logout);
-    supabaseClient.auth.onAuthStateChange(() => refreshAuthUI());
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      refreshAuthUI();
+      if (session?.user) cloudAutoLoadIfNeeded();
+    });
+
+    window.addEventListener("online", () => {
+      setSyncStatus("saving", "☁ 再同期");
+      cloudAutoLoadIfNeeded();
+    });
+
+    window.addEventListener("offline", () => {
+      setSyncStatus("local", "☁ オフライン");
+    });
 
     renderAll();
     showView("list");
-    refreshAuthUI();
+    startAutoSync();
   </script>
 </body>
 </html>

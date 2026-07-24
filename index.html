@@ -1283,7 +1283,7 @@
           <div>
             <div class="section-line">
               <h2>一覧</h2>
-              <p class="hint">子タスク内に期限近いものがある親にも、目印を出します。</p>
+              <p class="hint">未完了のみでは、子タスクが全部終わった親タスクも消えるようにしました。</p>
             </div>
             <div id="listConditionLine" class="condition-line"></div>
           </div>
@@ -1704,6 +1704,28 @@
     function rootTasks() { return currentTasks().filter(t => !t.parentId); }
     function leafTasks() { return currentTasks().filter(t => !hasChildren(t.id)); }
 
+
+    function leafTasksOfTree(t) {
+      const ids = new Set(descendants(t.id));
+      return currentTasks().filter(x => ids.has(x.id) && !hasChildren(x.id));
+    }
+
+    function hasOpenWorkInTree(t) {
+      const leaves = leafTasksOfTree(t);
+      if (!leaves.length) return t.status !== "done";
+      return leaves.some(x => x.status !== "done");
+    }
+
+    function isDoneForList(t) {
+      const leaves = leafTasksOfTree(t);
+      if (!leaves.length) return t.status === "done";
+      return leaves.every(x => x.status === "done");
+    }
+
+    function isOpenForList(t) {
+      return !isDoneForList(t);
+    }
+
     function descendants(id) {
       const result = [];
       const stack = [id];
@@ -1917,6 +1939,7 @@
       if (t.priority === "important") html += `<span class="badge priority-important">⭐重</span>`;
       html += childDeadlineBadgeHtml(t);
       if (t.status === "done") html += `<span class="badge">完了</span>`;
+      else if (hasChildren(t.id) && isDoneForList(t)) html += `<span class="badge">子完了</span>`;
       return html;
     }
 
@@ -2051,8 +2074,8 @@
       const device = $("listDevice").value;
       let tasks = mode === "parents" ? rootTasks() : mode === "small" ? leafTasks() : currentTasks();
 
-      if (status === "open") tasks = tasks.filter(t => t.status !== "done");
-      if (status === "done") tasks = tasks.filter(t => t.status === "done");
+      if (status === "open") tasks = tasks.filter(t => isOpenForList(t));
+      if (status === "done") tasks = tasks.filter(t => isDoneForList(t));
       if (status === "waiting") tasks = tasks.filter(t => t.status === "waiting");
       if (device !== "all") tasks = tasks.filter(t => t.device === device);
 

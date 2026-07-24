@@ -1283,7 +1283,7 @@
           <div>
             <div class="section-line">
               <h2>一覧</h2>
-              <p class="hint">未完了のみでは、子タスクが全部終わった親タスクも消えるようにしました。</p>
+              <p class="hint">未完了のみでは、完了した子タスクを親の中から隠します。</p>
             </div>
             <div id="listConditionLine" class="condition-line"></div>
           </div>
@@ -1726,6 +1726,13 @@
       return !isDoneForList(t);
     }
 
+    function matchesListStatus(t, status) {
+      if (status === "open") return t.status !== "done";
+      if (status === "done") return t.status === "done";
+      if (status === "waiting") return t.status === "waiting";
+      return true;
+    }
+
     function descendants(id) {
       const result = [];
       const stack = [id];
@@ -1968,13 +1975,15 @@
 
     function renderTask(t, opts = {}) {
       const child = !!opts.child;
+      const listStatus = opts.listStatus || "all";
       const isDone = t.status === "done";
-      const hasChild = hasChildren(t.id);
+      const visibleChildren = childrenOf(t.id).filter(c => matchesListStatus(c, listStatus));
+      const hasVisibleChild = visibleChildren.length > 0;
       const open = openParents.has(t.id);
       const detailId = `detail-${t.id}`;
       const cls = child ? "child-row" : "task-card";
       const el = document.createElement("div");
-      el.className = `${cls} dev-${t.device} ${deadlineClass(t)} ${childDeadlineClass(t)} ${hasChild ? "has-children" : ""} ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""} ${isDone ? "done" : ""}`;
+      el.className = `${cls} dev-${t.device} ${deadlineClass(t)} ${childDeadlineClass(t)} ${hasVisibleChild ? "has-children" : ""} ${t.priority === "first" ? "priority-first" : t.priority === "important" ? "priority-important" : ""} ${isDone ? "done" : ""}`;
 
       el.innerHTML = `
         <div class="task-main">
@@ -1984,13 +1993,13 @@
               ${t.parentId && !child ? `<div class="path">${esc(pathOf(t))}</div>` : ""}
               ${deadlineMarkHtml(t)}
               ${priorityMarkHtml(t)}
-              ${hasChild ? `<div class="split-alert">🍰 分解あり・子${childrenOf(t.id).length}</div>` : ""}
+              ${hasVisibleChild ? `<div class="split-alert">🍰 分解あり・子${visibleChildren.length}</div>` : ""}
               <div class="title ${!t.parentId ? "parent-title" : ""}">${esc(t.title)}</div>
               <div class="badges">${badgeHtml(t)}${taskSummary(t)}</div>
             </div>
             <div class="actions" style="margin-top:0;">
               <button class="tiny secondary" data-action="child" data-id="${t.id}">＋子</button>
-              <button class="tiny ${hasChild ? "split-button" : "light"}" data-action="${hasChild ? "expand" : "detail"}" data-id="${t.id}">${hasChild ? (open ? "分解を隠す" : `分解あり ${childrenOf(t.id).length}`) : "詳細"}</button>
+              <button class="tiny ${hasVisibleChild ? "split-button" : "light"}" data-action="${hasVisibleChild ? "expand" : "detail"}" data-id="${t.id}">${hasVisibleChild ? (open ? "分解を隠す" : `分解あり ${visibleChildren.length}`) : "詳細"}</button>
             </div>
           </div>
 
@@ -2015,10 +2024,10 @@
         </div>
       `;
 
-      if (hasChild && open) {
+      if (hasVisibleChild && open) {
         const box = document.createElement("div");
         box.className = "children";
-        childrenOf(t.id).forEach(c => box.appendChild(renderTask(c, { child: true })));
+        visibleChildren.forEach(c => box.appendChild(renderTask(c, { child: true, listStatus })));
 
         const addBtn = document.createElement("button");
         addBtn.className = "small secondary";
@@ -2074,9 +2083,7 @@
       const device = $("listDevice").value;
       let tasks = mode === "parents" ? rootTasks() : mode === "small" ? leafTasks() : currentTasks();
 
-      if (status === "open") tasks = tasks.filter(t => isOpenForList(t));
-      if (status === "done") tasks = tasks.filter(t => isDoneForList(t));
-      if (status === "waiting") tasks = tasks.filter(t => t.status === "waiting");
+      tasks = tasks.filter(t => matchesListStatus(t, status));
       if (device !== "all") tasks = tasks.filter(t => t.device === device);
 
       tasks = sortByPriorityAndTime(tasks);
@@ -2085,7 +2092,7 @@
         list.innerHTML = `<div class="empty">表示するタスクがありません。</div>`;
         return;
       }
-      tasks.forEach(t => list.appendChild(renderTask(t)));
+      tasks.forEach(t => list.appendChild(renderTask(t, { listStatus: status })));
     }
 
     function renderNowCondition() {
